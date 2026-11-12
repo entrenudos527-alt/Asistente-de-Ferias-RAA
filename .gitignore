@@ -1,0 +1,37 @@
+# Entorno virtual
+.venv/
+venv/
+env/
+
+# Dependencias y build
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+
+# Caché de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Caché de pruebas
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Variables de entorno (contiene claves sensibles)
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Sistema operativo
+.DS_Store
+Thumbs.db

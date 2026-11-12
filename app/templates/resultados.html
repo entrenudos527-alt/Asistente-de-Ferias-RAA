@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Chat — Asistente de Ferias RAA{% endblock %}
+
+{% block subtitulo %}
+Haz tu pregunta sobre una feria y recibe una respuesta basada en el registro oficial.
+{% endblock %}
+
+{% block fecha_demo %}
+Fecha de demostración: 04/11/2026 12:00 p. m. (America/Costa_Rica)
+{% endblock %}
+
+{% block navegacion %}
+<nav>
+    <a href="{{ url_for('inicio') }}">Volver al listado</a>
+    <a href="{{ url_for('admin_panel') }}">Administración</a>
+</nav>
+{% endblock %}
+
+{% block contenido %}
+<!-- Indicador de actividad seleccionada (contexto visible) -->
+{% if actividad_seleccionada %}
+<div class="alerta alerta-exito" style="margin-bottom: var(--espacio);">
+    <strong>Contexto:</strong> Consultando sobre "{{ actividad_seleccionada.nombre }}" ({{ actividad_seleccionada.codigo }})
+    <button class="btn btn-secundario" style="float:right; padding: 0.25rem 0.5rem; font-size: 0.8rem;" onclick="cambiarActividad()">Cambiar de actividad</button>
+</div>
+{% else %}
+<div class="alerta alerta-error" style="margin-bottom: var(--espacio);">
+    <strong>Sin actividad seleccionada:</strong> Puedes consultar sobre cualquier feria. El asistente te pedirá aclaración si es necesario.
+</div>
+{% endif %}
+
+<!-- Contenedor del chat -->
+<div class="chat-container">
+    <div class="chat-historial" id="historial-chat">
+        {% for mensaje in historial %}
+        <div class="mensaje {{ 'visitante' if mensaje.tipo == 'visitante' else 'asistente' }}">
+            {{ mensaje.texto | safe }}
+            {% if mensaje.referencia %}
+            <div class="referencia-registro">{{ mensaje.referencia }}</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+        {% if not historial %}
+        <div style="color: var(--color-texto-secundario); font-style: italic; margin-top: 1rem;">
+            No hay mensajes aún. Escribe tu primera pregunta.
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Preguntas sugeridas -->
+    <div class="preguntas-sugeridas">
+        <span style="font-size: 0.8rem; color: var(--color-texto-secundario); margin-right: 0.5rem;">Sugeridas:</span>
+        {% for pregunta in preguntas_sugeridas %}
+        <button class="pregunta-sugerida" onclick="enviarPreguntaSugerida('{{ pregunta | e }}')">{{ pregunta }}</button>
+        {% endfor %}
+    </div>
+
+    <!-- Formulario de envío -->
+    <div class="chat-form">
+        <input type="text" id="input-pregunta" placeholder="Escribe tu pregunta aquí..." autocomplete="off">
+        <button class="btn" id="btn-enviar" onclick="enviarPregunta()">Enviar</button>
+    </div>
+
+    <!-- Botón Nueva conversación -->
+    <div style="padding: 0 1rem 1rem 1rem; text-align: center;">
+        <button class="btn btn-secundario" onclick="nuevaConversacion()">Nueva conversación</button>
+    </div>
+</div>
+
+<script>
+    // Enviar pregunta al servidor
+    async function enviarPregunta() {
+        const input = document.getElementById('input-pregunta');
+        const texto = input.value.trim();
+        if (!texto) return;
+
+        // Mostrar mensaje del visitante inmediatamente
+        agregarMensajeVisitante(texto);
+        input.value = '';
+        document.getElementById('btn-enviar').disabled = true;
+        document.getElementById('btn-enviar').textContent = 'Consultando...';
+
+        try {
+            const respuesta = await fetch('/chat/enviar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pregunta: texto })
+            });
+            const data = await respuesta.json();
+
+            // Mostrar respuesta del asistente
+            if (data.exito) {
+                agregarMensajeAsistente(data.texto_respuesta, data.referencia_registro);
+            } else {
+                agregarMensajeAsistente(data.texto_respuesta || 'No se pudo procesar la consulta.');
+            }
+        } catch (error) {
+            agregarMensajeAsistente('No fue posible conectar con el servicio. Inténtalo de nuevo.');
+        } finally {
+            document.getElementById('btn-enviar').disabled = false;
+            document.getElementById('btn-enviar').textContent = 'Enviar';
+        }
+    }
+
+    function agregarMensajeVisitante(texto) {
+        const historial = document.getElementById('historial-chat');
+        const div = document.createElement('div');
+        div.className = 'mensaje visitante';
+        div.textContent = texto;
+        historial.appendChild(div);
+        historial.scrollTop = historial.scrollHeight;
+    }
+
+    function agregarMensajeAsistente(texto, referencia) {
+        const historial = document.getElementById('historial-chat');
+        const div = document.createElement('div');
+        div.className = 'mensaje asistente';
+        div.innerHTML = texto.replace(/\n/g, '<br>');
+        if (referencia) {
+            const ref = document.createElement('div');
+            ref.className = 'referencia-registro';
+            ref.textContent = referencia;
+            div.appendChild(ref);
+        }
+        historial.appendChild(div);
+        historial.scrollTop = historial.scrollHeight;
+    }
+
+    function enviarPreguntaSugerida(pregunta) {
+        document.getElementById('input-pregunta').value = pregunta;
+        enviarPregunta();
+    }
+
+    function nuevaConversacion() {
+        if (confirm('¿Borrar el historial de la conversación actual?')) {
+            window.location.href = '{{ url_for('chat_nueva') }}';
+        }
+    }
+
+    function cambiarActividad() {
+        window.location.href = '{{ url_for('inicio') }}';
+    }
+
+    // Permitir enviar con Enter
+    document.getElementById('input-pregunta').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            enviarPregunta();
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Asistente de Ferias RAA{% endblock %}</title>
+    <style>
+        /* ================================================================
+           BASE.CSS — Estilos embebidos en la plantilla base
+           Fondo oscuro, pantallas sencillas y profesionales en español
+           ================================================================ */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --color-fondo: #ffffff;
+            --color-fondo-secundario: #f1f3f5;
+            --color-texto: #6A1B9A;
+            --color-texto-secundario: #8e44ad;
+            --color-acento: #6A1B9A;
+            --color-acento-hover: #5a148a;
+            --color-alerta: #ff6b6b;
+            --color-exito: #51cf66;
+            --color-simulacion: #ffd43b;
+            --color-borde: #d1d1d1;
+            --sombra: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --radio: 8px;
+            --espacio: 1rem;
+        }
+
+    /* Logo y título en el encabezado */
+    .logo-titulo {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .logo-app {
+        width: 60px;
+        height: auto;
+        max-width: 100%;
+        border-radius: var(--radio);
+        object-fit: contain;
+    }
+
+    .titulo-app h1 {
+        font-size: 1.5rem;
+        margin: 0;
+        color: var(--color-acento);
+    }
+
+    .titulo-app p {
+        font-size: 0.875rem;
+        color: var(--color-texto-secundario);
+        margin: 0.15rem 0 0 0;
+    }
+
+    @media (max-width: 600px) {
+        .logo-titulo {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .logo-app {
+            width: 45px;
+        }
+
+        .titulo-app h1 {
+            font-size: 1.25rem;
+        }
+    }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--color-fondo);
+            color: var(--color-texto);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* Aviso permanente de simulación (RB-05: mostrar permanentemente) */
+        .aviso-simulacion {
+            background-color: var(--color-simulacion);
+            color: #1a1a2e;
+            text-align: center;
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-bottom: 2px solid var(--color-borde);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .contenedor {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: var(--espacio);
+        }
+
+        header {
+            background-color: var(--color-fondo-secundario);
+            padding: 1.5rem var(--espacio);
+            border-bottom: 1px solid var(--color-borde);
+            margin-bottom: var(--espacio);
+        }
+
+        header h1 {
+            color: var(--color-acento);
+            font-size: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        header p {
+            color: var(--color-texto-secundario);
+            font-size: 0.875rem;
+        }
+
+        .fecha-demo {
+            display: inline-block;
+            background-color: var(--color-fondo);
+            color: var(--color-acento);
+            padding: 0.25rem 0.75rem;
+            border-radius: var(--radio);
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            border: 1px solid var(--color-acento);
+        }
+
+        nav {
+            margin-top: 1rem;
+        }
+
+        nav a {
+            color: var(--color-acento);
+            text-decoration: none;
+            margin-right: 1rem;
+            font-size: 0.9rem;
+        }
+
+        nav a:hover {
+            text-decoration: underline;
+        }
+
+        /* Tarjetas de actividad */
+        .tarjeta {
+            background-color: var(--color-fondo-secundario);
+            border: 1px solid var(--color-borde);
+            border-radius: var(--radio);
+            padding: var(--espacio);
+            margin-bottom: var(--espacio);
+            transition: transform 0.2s;
+        }
+
+        .tarjeta:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--sombra);
+        }
+
+        .tarjeta h3 {
+            color: var(--color-acento);
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .tarjeta p {
+            color: var(--color-texto-secundario);
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .estado {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 0.5rem;
+        }
+
+        .estado-programada { background-color: #2d6a4f; color: white; }
+        .estado-cancelada { background-color: var(--color-alerta); color: white; }
+        .estado-finalizada { background-color: #6c757d; color: white; }
+
+        /* Botones */
+        .btn {
+            display: inline-block;
+            background-color: var(--color-acento);
+            color: #ffffff;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: var(--radio);
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: var(--color-acento-hover);
+        }
+
+        .btn-secundario {
+            background-color: var(--color-fondo-secundario);
+            color: var(--color-texto);
+            border: 1px solid var(--color-borde);
+        }
+
+        .btn-secundario:hover {
+            background-color: #d1d1d1;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        /* Filtros */
+        .filtros {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: var(--espacio);
+            flex-wrap: wrap;
+        }
+
+        .filtros input,
+        .filtros select {
+            padding: 0.5rem;
+            border: 1px solid var(--color-borde);
+            border-radius: var(--radio);
+            background-color: var(--color-fondo);
+            color: var(--color-texto);
+            font-size: 0.9rem;
+        }
+
+        /* Tabla con filtro */
+        .tabla-container {
+            background-color: var(--color-fondo-secundario);
+            border: 1px solid var(--color-borde);
+            border-radius: var(--radio);
+            overflow: hidden;
+            margin-top: var(--espacio);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--color-borde);
+        }
+
+        th {
+            background-color: #0f172a;
+            color: var(--color-acento);
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background-color: #233554;
+        }
+
+        /* Tablero con contadores grandes */
+        .tablero {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--espacio);
+            margin-bottom: var(--espacio);
+        }
+
+        .contador {
+            background-color: var(--color-fondo-secundario);
+            border: 1px solid var(--color-borde);
+            border-radius: var(--radio);
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .contador .valor {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--color-acento);
+            display: block;
+        }
+
+        .contador .etiqueta {
+            font-size: 0.875rem;
+            color: var(--color-texto-secundario);
+            margin-top: 0.25rem;
+            display: block;
+        }
+
+        /* Pantalla de detalle */
+        .detalle-bloque {
+            background-color: var(--color-fondo-secundario);
+            border: 1px solid var(--color-borde);
+            border-radius: var(--radio);
+            padding: var(--espacio);
+            margin-bottom: var(--espacio);
+        }
+
+        .detalle-bloque h3 {
+            color: var(--color-acento);
+            margin-bottom: 0.75rem;
+            border-bottom: 1px solid var(--color-borde);
+            padding-bottom: 0.5rem;
+        }
+
+        .detalle-campo {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .detalle-campo .etiqueta {
+            color: var(--color-texto-secundario);
+            font-weight: 600;
+        }
+
+        .detalle-campo .valor {
+            color: var(--color-texto);
+        }
+
+        .dato-no-disponible {
+            color: var(--color-texto-secundario);
+            font-style: italic;
+        }
+
+        /* Pantalla de chat */
+        .chat-container {
+            background-color: var(--color-fondo-secundario);
+            border: 1px solid var(--color-borde);
+            border-radius: var(--radio);
+            height: 500px;
+            display: flex;
+            flex-direction: column;
+            margin-bottom: var(--espacio);
+        }
+
+        .chat-historial {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .mensaje {
+            max-width: 80%;
+            padding: 0.75rem 1rem;
+            border-radius: var(--radio);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .mensaje.visitante {
+            background-color: var(--color-acento);
+            color: #ffffff;
+            align-self: flex-end;
+        }
+
+        .mensaje.asistente {
+            background-color: #233554;
+            color: var(--color-texto);
+            align-self: flex-start;
+        }
+
+        .referencia-registro {
+            font-size: 0.75rem;
+            color: var(--color-texto-secundario);
+            margin-top: 0.25rem;
+        }
+
+        .chat-form {
+            display: flex;
+            gap: 0.5rem;
+            padding: 1rem;
+            border-top: 1px solid var(--color-borde);
+        }
+
+        .chat-form input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 1px solid var(--color-borde);
+            border-radius: var(--radio);
+            background-color: var(--color-fondo);
+            color: var(--color-texto);
+        }
+
+        .preguntas-sugeridas {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            padding: 0 1rem 1rem 1rem;
+        }
+
+        .pregunta-sugerida {
+            background-color: var(--color-fondo-secundario);
+            border: 1px solid var(--color-borde);
+            border-radius: var(--radio);
+            padding: 0.5rem 1rem;
+            color: var(--color-acento);
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .pregunta-sugerida:hover {
+            background-color: #233554;
+        }
+
+        /* Alertas */
+        .alerta {
+            padding: 1rem;
+            border-radius: var(--radio);
+            margin-bottom: var(--espacio);
+        }
+
+        .alerta-error {
+            background-color: rgba(255, 107, 107, 0.1);
+            color: var(--color-alerta);
+            border: 1px solid var(--color-alerta);
+        }
+
+        .alerta-exito {
+            background-color: rgba(81, 207, 102, 0.1);
+            color: var(--color-exito);
+            border: 1px solid var(--color-exito);
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .contenedor {
+                padding: 0.5rem;
+            }
+            .tablero {
+                grid-template-columns: 1fr;
+            }
+            .mensaje {
+                max-width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="aviso-simulacion">
+        Demostración con datos simulados
+    </div>
+
+    <div class="contenedor">
+        <header>
+            <div class="logo-titulo">
+                <img src="{{ url_for('static', filename='img/logo-red.jpg') }}" alt="Logo Red Alajuelita Artesanal" class="logo-app">
+                <div class="titulo-app">
+                    <h1>{% block titulo %}Asistente de Ferias RAA{% endblock %}</h1>
+                    <p>{% block subtitulo %}{% endblock %}</p>
+                </div>
+            </div>
+            <span class="fecha-demo">
+                {% block fecha_demo %}Fecha de demostración: 04/11/2026 12:00 p. m. (America/Costa_Rica){% endblock %}
+            </span>
+        </header>
+
+        {% block navegacion %}{% endblock %}
+
+        {% block contenido %}{% endblock %}
+    </div>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

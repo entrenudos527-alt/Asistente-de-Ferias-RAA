@@ -1,0 +1,17 @@
+[project]
+name = "asistente-ferias-raa"
+version = "0.1.0"
+description = "Asistente de Ferias RAA - Prototipo académico"
+requires-python = ">=3.12"
+dependencies = [
+    "flask>=3.0,<4.0",
+    "python-dotenv>=1.0,<2.0",
+    "openpyxl>=3.1,<4.0",
+    "tzdata>=2026.6",
+    "pytest>=8.4.2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0,<9.0",
+]
