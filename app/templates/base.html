@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Asistente de Ferias RAA{% endblock %}</title>
+    <title>{% block title %}Asistente de Eventos RAA{% endblock %}</title>
     <style>
         /* ================================================================
            BASE.CSS — Estilos embebidos en la plantilla base
-           Fondo oscuro, pantallas sencillas y profesionales en español
+           Fondo claro, texto morado, pantallas profesionales en español
            ================================================================ */
         * {
             box-sizing: border-box;
@@ -31,50 +31,6 @@
             --espacio: 1rem;
         }
 
-    /* Logo y título en el encabezado */
-    .logo-titulo {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        flex-wrap: wrap;
-    }
-
-    .logo-app {
-        width: 60px;
-        height: auto;
-        max-width: 100%;
-        border-radius: var(--radio);
-        object-fit: contain;
-    }
-
-    .titulo-app h1 {
-        font-size: 1.5rem;
-        margin: 0;
-        color: var(--color-acento);
-    }
-
-    .titulo-app p {
-        font-size: 0.875rem;
-        color: var(--color-texto-secundario);
-        margin: 0.15rem 0 0 0;
-    }
-
-    @media (max-width: 600px) {
-        .logo-titulo {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 0.5rem;
-        }
-
-        .logo-app {
-            width: 45px;
-        }
-
-        .titulo-app h1 {
-            font-size: 1.25rem;
-        }
-    }
-
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background-color: var(--color-fondo);
@@ -83,8 +39,8 @@
             min-height: 100vh;
         }
 
-        /* Aviso permanente de simulación (RB-05: mostrar permanentemente) */
-        .aviso-simulacion {
+        /* Aviso permanente de datos */
+        .aviso-datos {
             background-color: var(--color-simulacion);
             color: #1a1a2e;
             text-align: center;
@@ -119,6 +75,7 @@
         header p {
             color: var(--color-texto-secundario);
             font-size: 0.875rem;
+            margin: 0;
         }
 
         .fecha-demo {
@@ -147,7 +104,7 @@
             text-decoration: underline;
         }
 
-        /* Tarjetas de actividad */
+        /* Tarjetas de evento */
         .tarjeta {
             background-color: var(--color-fondo-secundario);
             border: 1px solid var(--color-borde);
@@ -173,19 +130,6 @@
             font-size: 0.9rem;
             margin-bottom: 0.25rem;
         }
-
-        .estado {
-            display: inline-block;
-            padding: 0.2rem 0.6rem;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            margin-top: 0.5rem;
-        }
-
-        .estado-programada { background-color: #2d6a4f; color: white; }
-        .estado-cancelada { background-color: var(--color-alerta); color: white; }
-        .estado-finalizada { background-color: #6c757d; color: white; }
 
         /* Botones */
         .btn {
@@ -261,13 +205,13 @@
         }
 
         th {
-            background-color: #0f172a;
+            background-color: #f8f9fa;
             color: var(--color-acento);
             font-weight: 600;
         }
 
         tr:hover {
-            background-color: #233554;
+            background-color: #f1f3f5;
         }
 
         /* Tablero con contadores grandes */
@@ -372,12 +316,12 @@
         }
 
         .mensaje.asistente {
-            background-color: #233554;
+            background-color: #f1f3f5;
             color: var(--color-texto);
             align-self: flex-start;
         }
 
-        .referencia-registro {
+        .referencia-evento {
             font-size: 0.75rem;
             color: var(--color-texto-secundario);
             margin-top: 0.25rem;
@@ -417,7 +361,7 @@
         }
 
         .pregunta-sugerida:hover {
-            background-color: #233554;
+            background-color: #d1d1d1;
         }
 
         /* Alertas */
@@ -450,12 +394,19 @@
             .mensaje {
                 max-width: 90%;
             }
+            .filtros {
+                flex-direction: column;
+            }
+            .filtros input,
+            .filtros select {
+                width: 100%;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="aviso-simulacion">
-        Demostración con datos simulados
+    <div class="aviso-datos">
+        Información basada en datos de la Red Alajuelita Artesanal
     </div>
 
     <div class="contenedor">
@@ -463,12 +414,12 @@
             <div class="logo-titulo">
                 <img src="{{ url_for('static', filename='img/logo-red.jpg') }}" alt="Logo Red Alajuelita Artesanal" class="logo-app">
                 <div class="titulo-app">
-                    <h1>{% block titulo %}Asistente de Ferias RAA{% endblock %}</h1>
+                    <h1>{% block titulo %}Asistente de Eventos RAA{% endblock %}</h1>
                     <p>{% block subtitulo %}{% endblock %}</p>
                 </div>
             </div>
             <span class="fecha-demo">
-                {% block fecha_demo %}Fecha de demostración: 04/11/2026 12:00 p. m. (America/Costa_Rica){% endblock %}
+                {% block fecha_demo %}{% endblock %}
             </span>
         </header>
 

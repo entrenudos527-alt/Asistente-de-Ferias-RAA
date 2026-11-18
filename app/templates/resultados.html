@@ -1,14 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}Chat — Asistente de Ferias RAA{% endblock %}
+{% block title %}Chat — Asistente de Eventos RAA{% endblock %}
 
 {% block subtitulo %}
-Haz tu pregunta sobre una feria y recibe una respuesta basada en el registro oficial.
+Haz tu pregunta sobre un evento y recibe una respuesta basada en el registro oficial.
 {% endblock %}
 
-{% block fecha_demo %}
-Fecha de demostración: 04/11/2026 12:00 p. m. (America/Costa_Rica)
-{% endblock %}
+{% block fecha_demo %}{% endblock %}
 
 {% block navegacion %}
 <nav>
@@ -18,15 +16,15 @@ Fecha de demostración: 04/11/2026 12:00 p. m. (America/Costa_Rica)
 {% endblock %}
 
 {% block contenido %}
-<!-- Indicador de actividad seleccionada (contexto visible) -->
-{% if actividad_seleccionada %}
+<!-- Indicador de evento seleccionado (contexto visible) -->
+{% if evento_seleccionado %}
 <div class="alerta alerta-exito" style="margin-bottom: var(--espacio);">
-    <strong>Contexto:</strong> Consultando sobre "{{ actividad_seleccionada.nombre }}" ({{ actividad_seleccionada.codigo }})
-    <button class="btn btn-secundario" style="float:right; padding: 0.25rem 0.5rem; font-size: 0.8rem;" onclick="cambiarActividad()">Cambiar de actividad</button>
+    <strong>Contexto:</strong> Consultando sobre "{{ evento_seleccionado.get('Nombre del evento') }}"
+    <button class="btn btn-secundario" style="float:right; padding: 0.25rem 0.5rem; font-size: 0.8rem;" onclick="cambiarEvento()">Cambiar de evento</button>
 </div>
 {% else %}
 <div class="alerta alerta-error" style="margin-bottom: var(--espacio);">
-    <strong>Sin actividad seleccionada:</strong> Puedes consultar sobre cualquier feria. El asistente te pedirá aclaración si es necesario.
+    <strong>Sin evento seleccionado:</strong> Puedes consultar sobre cualquier evento. El asistente te pedirá aclaración si es necesario.
 </div>
 {% endif %}
 
@@ -37,7 +35,7 @@ Fecha de demostración: 04/11/2026 12:00 p. m. (America/Costa_Rica)
         <div class="mensaje {{ 'visitante' if mensaje.tipo == 'visitante' else 'asistente' }}">
             {{ mensaje.texto | safe }}
             {% if mensaje.referencia %}
-            <div class="referencia-registro">{{ mensaje.referencia }}</div>
+            <div class="referencia-evento">{{ mensaje.referencia }}</div>
             {% endif %}
         </div>
         {% endfor %}
@@ -119,7 +117,7 @@ Fecha de demostración: 04/11/2026 12:00 p. m. (America/Costa_Rica)
         div.innerHTML = texto.replace(/\n/g, '<br>');
         if (referencia) {
             const ref = document.createElement('div');
-            ref.className = 'referencia-registro';
+            ref.className = 'referencia-evento';
             ref.textContent = referencia;
             div.appendChild(ref);
         }
@@ -138,7 +136,7 @@ Fecha de demostración: 04/11/2026 12:00 p. m. (America/Costa_Rica)
         }
     }
 
-    function cambiarActividad() {
+    function cambiarEvento() {
         window.location.href = '{{ url_for('inicio') }}';
     }
 

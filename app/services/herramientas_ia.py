@@ -1,5 +1,5 @@
 """
-Contrato JSON de herramientas para el agente de IA (RB-09).
+Contrato JSON de herramientas para el agente de IA.
 
 Estas herramientas consultan el almacenamiento de la app cargado inicialmente
 desde el Excel de insumos. Son de solo lectura para el chat público.
@@ -9,126 +9,78 @@ Contrato definido en AGENTS.md, sección "Contrato JSON de herramientas".
 
 from typing import Any, Dict, List, Optional
 
-from app.services.lectura_datos import leer_actividades, obtener_actividad_por_codigo
-from app.services.regla_rb02 import obtener_fecha_referencia
-from app.services.regla_rb03_rb04 import obtener_proxima_actividad
-
-# Encabezados clave del Excel
-ENC_IDENTIFICADOR = "Identificador"
-ENC_ACTIVIDAD = "Actividad"
-ENC_LUGAR = "Lugar"
-ENC_FECHA_INICIO = "Fecha de inicio"
-ENC_ESTADO = "Estado de la feria"
-ENC_ULTIMA_ACTUALIZACION = "Última actualización"
-ENC_VERIFICACION_ESPACIOS = "Verificación de espacios"
+from app.services.lectura_eventos import leer_eventos, obtener_evento_por_nombre
 
 
-def _registro_a_dict_completo(registro: dict) -> dict:
-    """Convierte un registro del Excel en un diccionario serializable."""
-    resultado: dict = {}
-    for clave, valor in registro.items():
-        if hasattr(valor, "isoformat"):  # datetime
-            resultado[clave] = valor.isoformat()
-        else:
-            resultado[clave] = valor
-    return resultado
-
-
-def _campos_desconocidos(registro: dict) -> List[str]:
-    """Devuelve la lista de campos con valores desconocidos (vacíos o especiales)."""
-    desconocidos: List[str] = []
-    valores_especiales = {"", "por confirmar", "por definir", "no indicado", "no indicada"}
-    for clave, valor in registro.items():
-        if valor is None:
-            desconocidos.append(clave)
-        elif isinstance(valor, str) and valor.strip().lower() in valores_especiales:
-            desconocidos.append(clave)
-    return desconocidos
-
-
-def _detectar_inconsistencias(registro: dict) -> List[str]:
-    """Detecta inconsistencias básicas en el registro."""
-    inconsistencias: List[str] = []
-    # Ejemplo: si hay fecha de inicio y fecha de fin, validar orden
-    fecha_inicio = registro.get("Fecha de inicio")
-    fecha_fin = registro.get("Fecha de finalización")
-    if fecha_inicio and fecha_fin:
-        try:
-            from datetime import datetime
-            fi = datetime.fromisoformat(str(fecha_inicio)) if isinstance(fecha_inicio, str) else fecha_inicio
-            ff = datetime.fromisoformat(str(fecha_fin)) if isinstance(fecha_fin, str) else fecha_fin
-            if fi > ff:
-                inconsistencias.append("Fecha de inicio posterior a fecha de finalización")
-        except (ValueError, TypeError):
-            pass
-    return inconsistencias
+def _evento_a_resumen(registro: dict) -> dict:
+    """Convierte un registro de evento en un resumen para resultados de búsqueda."""
+    return {
+        "nombre": str(registro.get("Nombre del evento", "")),
+        "tipo": str(registro.get("Tipo de evento", "")),
+        "lugar": str(registro.get("Lugar del evento", "")),
+        "fecha_inicio": str(registro.get("Fecha de inicio", "")),
+    }
 
 
 # ============================================================================
-# buscar_ferias (solo lectura)
+# buscar_eventos (solo lectura)
 # ============================================================================
 
-def buscar_ferias(
-    codigo: Optional[str] = None,
+def buscar_eventos(
     nombre: Optional[str] = None,
-    fecha: Optional[str] = None,
+    tipo: Optional[str] = None,
     lugar: Optional[str] = None,
+    fecha: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Busca actividades por filtros: código, nombre, fecha o lugar.
+    Busca eventos por filtros: nombre, tipo, lugar o fecha.
     Es de solo lectura.
 
     Contrato JSON:
     {
-      "nombre": "buscar_ferias",
+      "nombre": "buscar_eventos",
       "argumentos": {
-        "codigo": "string | null",
         "nombre": "string | null",
-        "fecha": "string | null",
-        "lugar": "string | null"
+        "tipo": "string | null",
+        "lugar": "string | null",
+        "fecha": "string | null"
       },
       "salida": {
-        "resultados": [ { "codigo": "string", "nombre": "string", "fecha": "string", "lugar": "string" } ],
+        "resultados": [ { "nombre": "string", "tipo": "string", "lugar": "string", "fecha_inicio": "string" } ],
         "error": "string | null"
       }
     }
     """
     try:
-        datos = leer_actividades()
+        datos = leer_eventos()
         registros = datos["registros"]
 
-        # Aplicar filtros
         filtrados: List[dict] = []
         for registro in registros:
             coincide = True
 
-            if codigo is not None:
-                cod_registro = str(registro.get(ENC_IDENTIFICADOR, "")).strip()
-                if cod_registro.lower() != codigo.strip().lower():
+            if nombre is not None:
+                nom = str(registro.get("Nombre del evento", "")).strip()
+                if nombre.strip().lower() not in nom.lower():
                     coincide = False
 
-            if coincide and nombre is not None:
-                nom_registro = str(registro.get(ENC_ACTIVIDAD, "")).strip()
-                if nombre.strip().lower() not in nom_registro.lower():
-                    coincide = False
-
-            if coincide and fecha is not None:
-                fec_registro = str(registro.get(ENC_FECHA_INICIO, "")).strip()
-                if fecha.strip().lower() not in fec_registro.lower():
+            if coincide and tipo is not None:
+                t = str(registro.get("Tipo de evento", "")).strip()
+                if tipo.strip().lower() not in t.lower():
                     coincide = False
 
             if coincide and lugar is not None:
-                lug_registro = str(registro.get(ENC_LUGAR, "")).strip()
-                if lugar.strip().lower() not in lug_registro.lower():
+                lug = str(registro.get("Lugar del evento", "")).strip()
+                if lugar.strip().lower() not in lug.lower():
+                    coincide = False
+
+            if coincide and fecha is not None:
+                fec = str(registro.get("Fecha de inicio", "")).strip()
+                if fecha.strip().lower() not in fec.lower():
                     coincide = False
 
             if coincide:
-                filtrados.append({
-                    "codigo": str(registro.get(ENC_IDENTIFICADOR, "")),
-                    "nombre": str(registro.get(ENC_ACTIVIDAD, "")),
-                    "fecha": str(registro.get(ENC_FECHA_INICIO, "")),
-                    "lugar": str(registro.get(ENC_LUGAR, "")),
-                })
+                filtrados.append(_evento_a_resumen(registro))
 
         return {
             "resultados": filtrados,
@@ -143,148 +95,41 @@ def buscar_ferias(
 
 
 # ============================================================================
-# obtener_ficha (solo lectura)
+# obtener_evento (solo lectura)
 # ============================================================================
 
-def obtener_ficha(identificador: str) -> Dict[str, Any]:
+def obtener_evento(nombre_evento: str) -> Dict[str, Any]:
     """
-    Recupera la ficha vigente de una actividad por su identificador.
+    Recupera la ficha vigente de un evento por su nombre.
     Es de solo lectura.
 
     Contrato JSON:
     {
-      "nombre": "obtener_ficha",
+      "nombre": "obtener_evento",
       "argumentos": {
-        "identificador": "string"
+        "nombre": "string"
       },
       "salida": {
-        "ficha": { "campo": "valor" },
-        "ultima_actualizacion": "string | null",
-        "version": "string | null",
-        "fecha_verificacion_cupos": "string | null",
-        "campos_desconocidos": ["string"],
-        "inconsistencias": ["string"],
+        "evento": { "campo": "valor" },
         "error": "string | null"
       }
     }
     """
     try:
-        registro = obtener_actividad_por_codigo(identificador)
+        registro = obtener_evento_por_nombre(nombre_evento)
         if registro is None:
             return {
-                "ficha": {},
-                "ultima_actualizacion": None,
-                "version": None,
-                "fecha_verificacion_cupos": None,
-                "campos_desconocidos": [],
-                "inconsistencias": [],
-                "error": f"No se encontró la actividad con identificador '{identificador}'.",
+                "evento": {},
+                "error": f"No se encontró el evento '{nombre_evento}'.",
             }
 
-        ficha_completa = _registro_a_dict_completo(registro)
-
         return {
-            "ficha": ficha_completa,
-            "ultima_actualizacion": str(registro.get(ENC_ULTIMA_ACTUALIZACION, "")) or None,
-            "version": str(registro.get(ENC_ULTIMA_ACTUALIZACION, "")) or None,
-            "fecha_verificacion_cupos": str(registro.get(ENC_VERIFICACION_ESPACIOS, "")) or None,
-            "campos_desconocidos": _campos_desconocidos(registro),
-            "inconsistencias": _detectar_inconsistencias(registro),
+            "evento": registro,
             "error": None,
         }
 
     except Exception as e:
         return {
-            "ficha": {},
-            "ultima_actualizacion": None,
-            "version": None,
-            "fecha_verificacion_cupos": None,
-            "campos_desconocidos": [],
-            "inconsistencias": [],
-            "error": str(e),
-        }
-
-
-# ============================================================================
-# listar_proximas_ferias (solo lectura)
-# ============================================================================
-
-def listar_proximas_ferias(
-    fecha_referencia: Optional[str] = None,
-    filtros: Optional[Dict[str, Optional[str]]] = None,
-) -> Dict[str, Any]:
-    """
-    Devuelve actividades elegibles ordenadas, según la fecha de referencia y filtros.
-    Es de solo lectura.
-
-    Contrato JSON:
-    {
-      "nombre": "listar_proximas_ferias",
-      "argumentos": {
-        "fecha_referencia": "string",
-        "filtros": { "nombre": "string | null", "lugar": "string | null" }
-      },
-      "salida": {
-        "actividades": [ { "codigo": "string", "nombre": "string", "fecha_inicio": "string", "lugar": "string", "estado": "string" } ],
-        "error": "string | null"
-      }
-    }
-    """
-    try:
-        if fecha_referencia is None:
-            fecha_referencia = obtener_fecha_referencia()
-
-        # Usar la lógica de RB-03 para obtener la próxima actividad y candidatas
-        from datetime import datetime
-
-        fecha_ref_dt = datetime.fromisoformat(fecha_referencia)
-
-        datos = leer_actividades()
-        registros = datos["registros"]
-
-        # Filtrar actividades no canceladas ni finalizadas, con fecha >= referencia
-        elegibles: List[dict] = []
-        for registro in registros:
-            estado = str(registro.get(ENC_ESTADO, "")).strip().lower()
-            if estado in {"cancelada", "finalizada"}:
-                continue
-
-            fecha_inicio_str = str(registro.get(ENC_FECHA_INICIO, ""))
-            try:
-                fecha_inicio = datetime.fromisoformat(fecha_inicio_str)
-            except ValueError:
-                continue
-
-            if fecha_inicio >= fecha_ref_dt:
-                # Aplicar filtros adicionales si se proporcionan
-                if filtros:
-                    if filtros.get("nombre"):
-                        nom = str(registro.get(ENC_ACTIVIDAD, "")).lower()
-                        if filtros["nombre"].lower() not in nom:
-                            continue
-                    if filtros.get("lugar"):
-                        lug = str(registro.get(ENC_LUGAR, "")).lower()
-                        if filtros["lugar"].lower() not in lug:
-                            continue
-
-                elegibles.append({
-                    "codigo": str(registro.get(ENC_IDENTIFICADOR, "")),
-                    "nombre": str(registro.get(ENC_ACTIVIDAD, "")),
-                    "fecha_inicio": str(registro.get(ENC_FECHA_INICIO, "")),
-                    "lugar": str(registro.get(ENC_LUGAR, "")),
-                    "estado": estado,
-                })
-
-        # Ordenar por fecha de inicio
-        elegibles.sort(key=lambda a: a["fecha_inicio"])
-
-        return {
-            "actividades": elegibles,
-            "error": None,
-        }
-
-    except Exception as e:
-        return {
-            "actividades": [],
+            "evento": {},
             "error": str(e),
         }

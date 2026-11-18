@@ -1,14 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}Listado de Ferias — Asistente de Ferias RAA{% endblock %}
+{% block title %}Listado de Eventos — Asistente de Eventos RAA{% endblock %}
 
 {% block subtitulo %}
-Consulta las actividades artesanales registradas y filtra por nombre, fecha o lugar.
+Consulta las actividades artesanales registradas y filtra por nombre, tipo, fecha o lugar.
 {% endblock %}
 
-{% block fecha_demo %}
-Fecha de demostración: 04/11/2026 12:00 p. m. (America/Costa_Rica)
-{% endblock %}
+{% block fecha_demo %}{% endblock %}
 
 {% block navegacion %}
 <nav>
@@ -21,46 +19,51 @@ Fecha de demostración: 04/11/2026 12:00 p. m. (America/Costa_Rica)
 <!-- Filtros -->
 <div class="filtros">
     <input type="text" id="filtro-busqueda" placeholder="Buscar por nombre o código...">
-    <input type="text" id="filtro-fecha" placeholder="Fecha (ej. 2026-11-15)">
+    <select id="filtro-tipo" placeholder="Tipo de evento">
+        <option value="">Todos los tipos</option>
+        {% for tipo in tipos_evento %}
+        <option value="{{ tipo }}">{{ tipo }}</option>
+        {% endfor %}
+    </select>
+    <input type="text" id="filtro-fecha" placeholder="Fecha (ej. 28 de noviembre de 2026)">
     <input type="text" id="filtro-lugar" placeholder="Lugar...">
     <button class="btn btn-secundario" id="btn-limpiar-filtros">Limpiar filtros</button>
 </div>
 
 <!-- Mensaje cuando no hay resultados -->
 <div id="mensaje-sin-resultados" class="alerta alerta-error" style="display:none;">
-    No encontramos actividades con esos filtros.
+    No encontramos eventos con esos filtros.
 </div>
 
 <!-- Tablero con contadores grandes -->
 <div class="tablero">
     <div class="contador">
-        <span class="valor" id="contador-total">{{ total_registros }}</span>
-        <span class="etiqueta">Actividades registradas</span>
+        <span class="valor">{{ total_registros }}</span>
+        <span class="etiqueta">Eventos registrados</span>
     </div>
+    {% for tipo, cantidad in conteo_por_tipo.items() %}
     <div class="contador">
-        <span class="valor" id="contador-proximas">{{ contador_proximas }}</span>
-        <span class="etiqueta">Próximas actividades</span>
+        <span class="valor">{{ cantidad }}</span>
+        <span class="etiqueta">{{ tipo }}</span>
     </div>
-    <div class="contador">
-        <span class="valor" id="contador-canceladas">{{ contador_canceladas }}</span>
-        <span class="etiqueta">Canceladas o finalizadas</span>
-    </div>
+    {% endfor %}
 </div>
 
 <!-- Listado de tarjetas -->
 <div id="listado-ferias">
-    {% for actividad in actividades %}
-    <div class="tarjeta" data-codigo="{{ actividad.codigo }}" data-nombre="{{ actividad.nombre | lower }}" data-fecha="{{ actividad.fecha }}" data-lugar="{{ actividad.lugar | lower }}">
-        <h3>{{ actividad.nombre }}</h3>
-        <p><strong>Fecha:</strong> {{ actividad.fecha | formato_fecha }}</p>
-        <p><strong>Lugar:</strong> {{ actividad.lugar }}</p>
-        <p><strong>Horario de atención:</strong> {{ actividad.horario_atencion | formato_hora | default('No disponible') }}</p>
-        <p><strong>Estado de la actividad:</strong> <span class="estado estado-{{ actividad.estado_actividad | lower }}">{{ actividad.estado_actividad }}</span></p>
-        <p><strong>Estado de inscripción:</strong> {{ actividad.estado_inscripcion }}</p>
+    {% for evento in eventos %}
+    <div class="tarjeta" data-codigo="{{ evento.nombre | lower }}" data-nombre="{{ evento.nombre | lower }}" data-tipo="{{ evento.tipo | lower }}" data-fecha="{{ evento.fecha_inicio | formato_fecha }}" data-lugar="{{ evento.lugar | lower }}">
+        <h3>{{ evento.nombre }}</h3>
+        <p><strong>Tipo:</strong> {{ evento.tipo }}</p>
+        <p><strong>Lugar:</strong> {{ evento.lugar }}</p>
+        <p><strong>Fecha:</strong> {{ evento.fecha_inicio | formato_fecha }}</p>
+        {% if evento.hora_inicio %}
+        <p><strong>Horario:</strong> {{ evento.hora_inicio | formato_hora }}</p>
+        {% endif %}
 
         <div class="btn-group">
-            <a href="{{ url_for('detalle', codigo=actividad.codigo) }}" class="btn">Ver detalles</a>
-            <button class="btn btn-secundario" onclick="abrirChat('{{ actividad.codigo }}', '{{ actividad.nombre | e }}')">Consultar al asistente</button>
+            <a href="{{ url_for('detalle', nombre_evento=evento.nombre) }}" class="btn">Ver detalles</a>
+            <button class="btn btn-secundario" onclick="abrirChat('{{ evento.nombre }}')">Consultar al asistente</button>
         </div>
     </div>
     {% endfor %}
@@ -70,6 +73,7 @@ Fecha de demostración: 04/11/2026 12:00 p. m. (America/Costa_Rica)
     // Filtro dinámico en el lado del cliente
     document.addEventListener('DOMContentLoaded', function() {
         const filtroBusqueda = document.getElementById('filtro-busqueda');
+        const filtroTipo = document.getElementById('filtro-tipo');
         const filtroFecha = document.getElementById('filtro-fecha');
         const filtroLugar = document.getElementById('filtro-lugar');
         const btnLimpiar = document.getElementById('btn-limpiar-filtros');
@@ -78,20 +82,23 @@ Fecha de demostración: 04/11/2026 12:00 p. m. (America/Costa_Rica)
 
         function aplicarFiltros() {
             const textoBusqueda = filtroBusqueda.value.toLowerCase().trim();
+            const textoTipo = filtroTipo.value.toLowerCase().trim();
             const textoFecha = filtroFecha.value.toLowerCase().trim();
             const textoLugar = filtroLugar.value.toLowerCase().trim();
             let visibles = 0;
 
             tarjetas.forEach(tarjeta => {
                 const nombre = tarjeta.dataset.nombre || '';
+                const tipo = tarjeta.dataset.tipo || '';
                 const fecha = tarjeta.dataset.fecha || '';
                 const lugar = tarjeta.dataset.lugar || '';
 
                 const coincideBusqueda = textoBusqueda === '' || nombre.includes(textoBusqueda);
+                const coincideTipo = textoTipo === '' || tipo.includes(textoTipo);
                 const coincideFecha = textoFecha === '' || fecha.includes(textoFecha);
                 const coincideLugar = textoLugar === '' || lugar.includes(textoLugar);
 
-                if (coincideBusqueda && coincideFecha && coincideLugar) {
+                if (coincideBusqueda && coincideTipo && coincideFecha && coincideLugar) {
                     tarjeta.style.display = 'block';
                     visibles++;
                 } else {
@@ -103,20 +110,20 @@ Fecha de demostración: 04/11/2026 12:00 p. m. (America/Costa_Rica)
         }
 
         filtroBusqueda.addEventListener('input', aplicarFiltros);
+        filtroTipo.addEventListener('change', aplicarFiltros);
         filtroFecha.addEventListener('input', aplicarFiltros);
         filtroLugar.addEventListener('input', aplicarFiltros);
         btnLimpiar.addEventListener('click', function() {
             filtroBusqueda.value = '';
+            filtroTipo.value = '';
             filtroFecha.value = '';
             filtroLugar.value = '';
             aplicarFiltros();
         });
     });
 
-    function abrirChat(codigo, nombre) {
-        // Abre el chat con el identificador de la actividad como contexto
+    function abrirChat(nombre) {
         const url = new URL('{{ url_for('chat') }}', window.location.origin);
-        url.searchParams.set('codigo', codigo);
         url.searchParams.set('nombre', nombre);
         window.location.href = url.toString();
     }

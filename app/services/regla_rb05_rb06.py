@@ -4,41 +4,27 @@ Reglas RB-05 y RB-06.
 RB-05: Redactar con respaldo en el registro
 - Responder en español claro, cordial y breve.
 - Priorizar el dato solicitado y añadir solo las condiciones necesarias para interpretarlo.
-- No inventar información durante la conversación. Los datos ficticios preparados en el Excel
-  sí pueden consultarse porque forman parte del escenario definido.
-- No convertir el horario de atención en horario de montaje, el responsable de la actividad en
-  contacto autorizado, ni los cupos disponibles en una reserva.
-- Indicar el código de la actividad y la última actualización en una referencia visible junto a
-  la respuesta. Ante cupos, mostrar además cuándo se verificaron.
-- Mostrar permanentemente "Demostración con datos simulados". En respuestas sobre costos, cupos,
-  contactos o inscripción, aclarar que corresponden al escenario de práctica.
+- No inventar información durante la conversación. Los datos del Excel sí pueden consultarse.
+- No confundir campos vacíos con "No", "No aplica", cero ni gratuito.
+- Mostrar permanentemente la referencia al evento consultado.
 
 RB-06: Información faltante y preguntas fuera del tema
-- Campos vacíos, "Por confirmar", "Por definir" o "No indicado" = desconocidos.
-- Distinguir "No aplica", "No habilitado" y el número cero: no representan el mismo estado.
-  El valor 0 en cupos significa que no hay espacios.
+- Campos vacíos = desconocidos (información pendiente).
+- Distinguir "Sí", "No", "No aplica", "Por confirmar" y cero: son estados distintos.
 - Si falta información, responder únicamente lo conocido y explicar qué dato no está disponible.
-- Cuando exista un contacto autorizado, ofrecerlo como referencia de práctica.
-- Si preguntan por compradores, ganancias, clima u otra información no registrada, no estimar
-  valores ni buscar fuera del conjunto de datos en esta versión.
+- Cuando exista un contacto autorizado, ofrecerlo como referencia.
+- Si preguntan por información no registrada, no estimar valores ni buscar fuera del conjunto de datos.
 """
 
 from typing import Dict, List, Optional, Tuple
 
-# Campos que se consideran "desconocidos" si están vacíos o tienen estos valores
+# Campos que se consideran "desconocidos" si están vacíos
 VALORES_DESCONOCIDOS = {"", "por confirmar", "por definir", "no indicado", "no indicada"}
 
-AVISO_SIMULACION = "Demostración con datos simulados"
+# Valores que SÍ son conocidos (no se tratan como desconocidos aunque sean negativos o nulos)
+VALORES_CONOCIDOS = {"sí", "si", "no", "no aplica", "por confirmar", "0", "cero"}
 
-# Temas que requieren aclaración de que son escenario de práctica
-TEMAS_PRACTICA = {"costo", "cupo", "contacto", "inscripción"}
-
-# Campos que NO deben confundirse entre sí
-CAMPOS_NO_CONFUNDIR = {
-    "horario de atención": "horario de montaje",
-    "responsable de la actividad": "contacto autorizado",
-    "cupos disponibles": "reserva",
-}
+AVISO_DATOS = "Información basada en datos de la Red Alajuelita Artesanal"
 
 
 def es_valor_desconocido(valor) -> bool:
@@ -47,44 +33,41 @@ def es_valor_desconocido(valor) -> bool:
         return True
     if isinstance(valor, str) and valor.strip().lower() in VALORES_DESCONOCIDOS:
         return True
+    if isinstance(valor, str) and valor.strip() == "":
+        return True
     return False
 
 
 def necesita_aclaracion_practica(tema: str) -> bool:
-    """Devuelve True si el tema requiere aclarar que es escenario de práctica."""
-    return any(palabra in tema.lower() for palabra in TEMAS_PRACTICA)
+    """Siempre False para este proyecto: no hay escenario de práctica simulada."""
+    return False
 
 
 def obtener_contacto_autorizado(registro: Dict) -> Optional[Dict[str, str]]:
     """
-    Extrae los datos de contacto autorizado de un registro.
+    Extrae los datos de contacto autorizado de un registro de evento.
     Devuelve None si no hay contacto disponible.
     """
-    nombre = registro.get("Contacto autorizado de práctica")
-    cargo = registro.get("Cargo del contacto")
-    telefono = registro.get("Teléfono o WhatsApp de práctica")
-    correo = registro.get("Correo de práctica")
-    horario = registro.get("Horario del contacto")
+    nombre = registro.get("Coordinador del evento")
+    whatsapp = registro.get("WhatsApp de coordinación")
 
-    if es_valor_desconocido(nombre) and es_valor_desconocido(correo) and es_valor_desconocido(telefono):
+    if es_valor_desconocido(nombre) and es_valor_desconocido(whatsapp):
         return None
 
     return {
         "nombre": str(nombre) if not es_valor_desconocido(nombre) else "No indicado",
-        "cargo": str(cargo) if not es_valor_desconocido(cargo) else "No indicado",
-        "telefono": str(telefono) if not es_valor_desconocido(telefono) else "No habilitado en el ejercicio",
-        "correo": str(correo) if not es_valor_desconocido(correo) else "No indicado",
-        "horario": str(horario) if not es_valor_desconocido(horario) else "No indicado",
+        "whatsapp": str(whatsapp) if not es_valor_desconocido(whatsapp) else "No indicado",
     }
 
 
 def es_pregunta_fuera_de_tema(pregunta: str) -> Tuple[bool, Optional[str]]:
     """
-    Detecta si la pregunta pide información no registrada (compradores, ganancias, clima, etc.).
+    Detecta si la pregunta pide información no registrada.
     Devuelve (es_fuera_de_tema, campo_faltante).
     """
-    palabras_fuera = ["comprador", "compradores", "venta", "ganancia", "ganancias", "ganar", "gana", "clima", "tiempo", "afluencia",
-                      "visitante", "público asistente", "cuántas personas"]
+    palabras_fuera = ["comprador", "compradores", "venta", "ganancia", "ganancias", "ganar", "gana",
+                      "clima", "tiempo", "afluencia", "visitante", "público asistente", "cuántas personas",
+                      "beneficio", "utilidad"]
     pregunta_lower = pregunta.lower()
     for palabra in palabras_fuera:
         if palabra in pregunta_lower:
@@ -92,44 +75,27 @@ def es_pregunta_fuera_de_tema(pregunta: str) -> Tuple[bool, Optional[str]]:
     return False, None
 
 
-def construir_referencia_registro(
-    registro: Dict, incluir_verificacion_cupos: bool = False
-) -> str:
-    """
-    Construye la referencia visible al registro: código + última actualización.
-    Si incluir_verificacion_cupos es True, añade la fecha de verificación de cupos.
-    """
-    codigo = registro.get("Identificador", "No disponible")
-    ultima_actualizacion = registro.get("Última actualización", "No disponible")
-    referencia = f"Código: {codigo} | Última actualización: {ultima_actualizacion}"
-    if incluir_verificacion_cupos:
-        verificacion = registro.get("Verificación de espacios", "No disponible")
-        referencia += f" | Verificación de cupos: {verificacion}"
-    return referencia
+def construir_referencia_evento(evento: Dict) -> str:
+    """Construye la referencia visible al evento: nombre del evento."""
+    nombre = evento.get("Nombre del evento", "No disponible")
+    return f"Evento: {nombre}"
 
 
 def formatear_respuesta_con_respaldo(
     respuesta_texto: str,
-    registro: Dict,
-    es_practica: bool = False,
-    incluir_verificacion_cupos: bool = False,
+    evento: Dict,
 ) -> str:
     """
-    Formatea una respuesta aplicando RB-05: añade aviso de simulación si es necesario,
-    referencia visible al registro, y aclaración de escenario de práctica.
+    Formatea una respuesta aplicando RB-05: añade referencia visible al evento.
     """
     partes = [respuesta_texto.strip()]
 
-    # Referencia visible al registro
-    referencia = construir_referencia_registro(registro, incluir_verificacion_cupos)
+    # Referencia visible al evento
+    referencia = construir_referencia_evento(evento)
     partes.append(f"\n{referencia}")
 
-    # Aviso de simulación permanente
-    partes.append(f"\n{AVISO_SIMULACION}")
-
-    # Si es tema de práctica, aclarar que es escenario simulado
-    if es_practica:
-        partes.append("Esta información corresponde al escenario de práctica.")
+    # Aviso permanente de datos
+    partes.append(f"\n{AVISO_DATOS}")
 
     return "\n".join(partes)
 
@@ -154,13 +120,12 @@ def manejar_informacion_faltante(
     if campos_faltantes:
         faltante_txt = ", ".join(campos_faltantes)
         partes.append(f"No consta en el registro: {faltante_txt}.")
+        partes.append("Te sugerimos consultar con la coordinación del evento para obtener esa información.")
 
     # Contacto autorizado
     if contacto:
         partes.append(
-            f"Para más información, puede contactar a {contacto['nombre']} "
-            f"({contacto['cargo']}). Teléfono: {contacto['telefono']}. "
-            f"Correo: {contacto['correo']}."
+            f"Coordinador: {contacto['nombre']}. WhatsApp: {contacto['whatsapp']}."
         )
 
     if not partes:
@@ -171,12 +136,18 @@ def manejar_informacion_faltante(
 
 def validar_no_confundir_campos(campo_solicitado: str, campo_devuelto: str) -> bool:
     """
-    Devuelve True si el campo devuelto NO es una confusión prohibida del campo solicitado.
-    RB-05: no convertir horario de atención en montaje, responsable en contacto, cupos en reserva.
+    Devuelve True si el campo devuelto NO es una confusión prohibida.
     """
     solicitado = campo_solicitado.lower().strip()
     devuelto = campo_devuelto.lower().strip()
-    for prohibido, sustituto in CAMPOS_NO_CONFUNDIR.items():
+    pares_no_confundir = [
+        ("costo", "donación"),
+        ("donación", "costo"),
+        ("cupos disponibles", "cupos totales"),
+        ("montaje", "desmontaje"),
+        ("inicio", "finalización"),
+    ]
+    for prohibido, sustituto in pares_no_confundir:
         if prohibido in solicitado and sustituto in devuelto:
             return False
     return True

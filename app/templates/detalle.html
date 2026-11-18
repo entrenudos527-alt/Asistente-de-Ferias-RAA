@@ -1,14 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}Detalle — {{ actividad.nombre }} — Asistente de Ferias RAA{% endblock %}
+{% block title %}Detalle — {{ evento['Nombre del evento'] }} — Asistente de Eventos RAA{% endblock %}
 
 {% block subtitulo %}
-Ficha completa de {{ actividad.codigo }}: {{ actividad.nombre }}
+Ficha completa de {{ evento['Nombre del evento'] }}
 {% endblock %}
 
-{% block fecha_demo %}
-Fecha de demostración: 04/11/2026 12:00 p. m. (America/Costa_Rica)
-{% endblock %}
+{% block fecha_demo %}{% endblock %}
 
 {% block navegacion %}
 <nav>
@@ -23,180 +21,179 @@ Fecha de demostración: 04/11/2026 12:00 p. m. (America/Costa_Rica)
     <a href="{{ url_for('inicio') }}" class="btn btn-secundario">← Volver al listado</a>
 </div>
 
-<!-- Información general -->
+{% set evento = evento %}
+
+<!-- 1. Información general y ubicación -->
 <div class="detalle-bloque">
-    <h3>1. Información general</h3>
+    <h3>1. Información general y ubicación</h3>
     <div class="detalle-campo">
-        <span class="etiqueta">Nombre de la actividad:</span>
-        <span class="valor">{{ actividad.nombre | default('Información no disponible', true) }}</span>
+        <span class="etiqueta">Nombre del evento:</span>
+        <span class="valor">{{ evento.get('Nombre del evento', 'Información pendiente') }}</span>
     </div>
     <div class="detalle-campo">
-        <span class="etiqueta">Código:</span>
-        <span class="valor">{{ actividad.codigo | default('Información no disponible', true) }}</span>
+        <span class="etiqueta">Tipo de evento:</span>
+        <span class="valor">{{ evento.get('Tipo de evento', 'Información pendiente') }}</span>
     </div>
     <div class="detalle-campo">
-        <span class="etiqueta">Organiza:</span>
-        <span class="valor">{{ actividad.organiza | default('Información no disponible', true) }}</span>
+        <span class="etiqueta">Organizador:</span>
+        <span class="valor">{{ evento.get('Organizador del evento', 'Información pendiente') }}</span>
     </div>
     <div class="detalle-campo">
-        <span class="etiqueta">Días de participación:</span>
-        <span class="valor">{{ actividad.dias_participacion | default('Información no disponible', true) }}</span>
+        <span class="etiqueta">Lugar:</span>
+        <span class="valor">{{ evento.get('Lugar del evento', 'Información pendiente') }}</span>
+    </div>
+    <div class="detalle-campo">
+        <span class="etiqueta">Dirección exacta:</span>
+        <span class="valor">{{ evento.get('Dirección exacta', 'Información pendiente') }}</span>
+    </div>
+    <div class="detalle-campo">
+        <span class="etiqueta">Enlace del evento:</span>
+        <span class="valor">{{ evento.get('Enlace del evento', 'Información pendiente') }}</span>
     </div>
 </div>
 
-<!-- Fechas y horarios -->
+<!-- 2. Fechas y horarios -->
 <div class="detalle-bloque">
     <h3>2. Fechas y horarios</h3>
     <div class="detalle-campo">
         <span class="etiqueta">Fecha de inicio:</span>
-        <span class="valor">{{ actividad.fecha_inicio | formato_fecha | default('Información no disponible', true) }}</span>
+        <span class="valor">{{ evento.get('Fecha de inicio') | formato_fecha | default('Información pendiente', true) }}</span>
     </div>
     <div class="detalle-campo">
         <span class="etiqueta">Fecha de finalización:</span>
-        <span class="valor">{{ actividad.fecha_finalizacion | formato_fecha | default('Información no disponible', true) }}</span>
+        <span class="valor">{{ evento.get('Fecha de finalización') | formato_fecha | default('Información pendiente', true) }}</span>
     </div>
     <div class="detalle-campo">
-        <span class="etiqueta">Horario de atención al público:</span>
-        <span class="valor">{{ actividad.inicio_atencion_simulado | formato_hora | default('Información no disponible', true) }} a {{ actividad.cierre_atencion_simulado | formato_hora | default('Información no disponible', true) }}</span>
+        <span class="etiqueta">Hora de inicio:</span>
+        <span class="valor">{{ evento.get('Hora de inicio del evento') | formato_hora | default('Información pendiente', true) }}</span>
     </div>
     <div class="detalle-campo">
-        <span class="etiqueta">Ingreso y montaje:</span>
-        <span class="valor">{{ actividad.ingreso_y_montaje | formato_hora | default('Información no disponible', true) }}</span>
+        <span class="etiqueta">Hora de finalización:</span>
+        <span class="valor">{{ evento.get('Hora finalización del evento') | formato_hora | default('Información pendiente', true) }}</span>
     </div>
     <div class="detalle-campo">
-        <span class="etiqueta">Salida y desmontaje:</span>
-        <span class="valor">{{ actividad.salida_y_desmontaje | formato_hora | default('Información no disponible', true) }}</span>
+        <span class="etiqueta">Hora de montaje:</span>
+        <span class="valor">{{ evento.get('Hora de montaje') | formato_hora | default('Información pendiente', true) }}</span>
+    </div>
+    <div class="detalle-campo">
+        <span class="etiqueta">Hora de desmontaje:</span>
+        <span class="valor">{{ evento.get('Hora de desmontaje') | formato_hora | default('Información pendiente', true) }}</span>
     </div>
 </div>
 
-<!-- Ubicación y acceso -->
+<!-- 3. Espacio, mesa y toldo -->
 <div class="detalle-bloque">
-    <h3>3. Ubicación y acceso</h3>
+    <h3>3. Espacio, mesa y toldo</h3>
     <div class="detalle-campo">
-        <span class="etiqueta">Lugar:</span>
-        <span class="valor">{{ actividad.lugar | default('Información no disponible', true) }}</span>
+        <span class="etiqueta">Tamaño del espacio:</span>
+        <span class="valor">{{ evento.get('Tamaño del espacio', 'Información pendiente') }}</span>
     </div>
     <div class="detalle-campo">
-        <span class="etiqueta">Dirección exacta:</span>
-        <span class="valor">{{ actividad.direccion_exacta_practica | default('Información no disponible', true) }}</span>
+        <span class="etiqueta">Tamaño de la mesa:</span>
+        <span class="valor">{{ evento.get('Tamaño de la mesa', 'Información pendiente') }}</span>
     </div>
     <div class="detalle-campo">
-        <span class="etiqueta">Acceso y parqueo:</span>
-        <span class="valor">{{ actividad.acceso_y_parqueo | default('Información no disponible', true) }}</span>
-    </div>
-    <div class="detalle-campo">
-        <span class="etiqueta">Referencia de ubicación:</span>
-        <span class="valor">{{ actividad.enlace_ubicacion_practica | default('Información no disponible', true) }}</span>
+        <span class="etiqueta">Debe llevar toldo:</span>
+        <span class="valor">{{ evento.get('Debe llevar toldo', 'Información pendiente') }}</span>
     </div>
 </div>
 
-<!-- Costos -->
+<!-- 4. Facilidades y condiciones de participación -->
 <div class="detalle-bloque">
-    <h3>4. Costos</h3>
+    <h3>4. Facilidades y condiciones de participación</h3>
+    <div class="detalle-campo">
+        <span class="etiqueta">Parqueo disponible:</span>
+        <span class="valor">{{ evento.get('Parqueo disponible', 'Información pendiente') }}</span>
+    </div>
+    <div class="detalle-campo">
+        <span class="etiqueta">Se permite acompañante:</span>
+        <span class="valor">{{ evento.get('Se permite acompañante', 'Información pendiente') }}</span>
+    </div>
+    <div class="detalle-campo">
+        <span class="etiqueta">Lugar para calentar alimentos:</span>
+        <span class="valor">{{ evento.get('Lugar para calentar alimentos', 'Información pendiente') }}</span>
+    </div>
+    <div class="detalle-campo">
+        <span class="etiqueta">Lugar para almorzar:</span>
+        <span class="valor">{{ evento.get('Lugar para almorzar', 'Información pendiente') }}</span>
+    </div>
+    <div class="detalle-campo">
+        <span class="etiqueta">Se permite comer en el stand:</span>
+        <span class="valor">{{ evento.get('Se permite comer en el stand', 'Información pendiente') }}</span>
+    </div>
+</div>
+
+<!-- 5. Manejo del stand y mercadería entre días -->
+<div class="detalle-bloque">
+    <h3>5. Manejo del stand y mercadería entre días</h3>
+    <div class="detalle-campo">
+        <span class="etiqueta">Manejo del stand y mercadería:</span>
+        <span class="valor">{{ evento.get('Manejo del stand y la mercadería entre días', 'Información pendiente') }}</span>
+    </div>
+</div>
+
+<!-- 6. Costos, donaciones y pagos -->
+<div class="detalle-bloque">
+    <h3>6. Costos, donaciones y pagos</h3>
     <div class="detalle-campo">
         <span class="etiqueta">Costo de participación:</span>
-        <span class="valor">{{ actividad.costo_participacion | default('Información no disponible', true) }} {{ actividad.moneda | default('') }} {{ actividad.unidad_cobro | default('') }}</span>
+        <span class="valor">{{ evento.get('Costo de participación') | formato_monto | default('Información pendiente', true) }}</span>
     </div>
     <div class="detalle-campo">
-        <span class="etiqueta">Incluye el costo:</span>
-        <span class="valor">{{ actividad.incluye_el_costo | default('Información no disponible', true) }}</span>
-    </div>
-    <div class="detalle-campo">
-        <span class="etiqueta">Forma de pago:</span>
-        <span class="valor">{{ actividad.forma_de_pago | default('Información no disponible', true) }}</span>
+        <span class="etiqueta">Donación monetaria:</span>
+        <span class="valor">{{ evento.get('Donación monetaria') | formato_monto | default('Información pendiente', true) }}</span>
     </div>
     <div class="detalle-campo">
         <span class="etiqueta">Fecha límite de pago:</span>
-        <span class="valor">{{ actividad.fecha_limite_de_pago | formato_fecha | default('Información no disponible', true) }}</span>
+        <span class="valor">{{ evento.get('Fecha límite de pago') | formato_fecha | default('Información pendiente', true) }}</span>
     </div>
 </div>
 
-<!-- Requisitos y equipo -->
+<!-- 7. Inscripciones y cupos -->
 <div class="detalle-bloque">
-    <h3>5. Requisitos y equipo</h3>
-    <div class="detalle-campo">
-        <span class="etiqueta">Requisitos para participar:</span>
-        <span class="valor">{{ actividad.requisitos | default('Información no disponible', true) }}</span>
-    </div>
-    <div class="detalle-campo">
-        <span class="etiqueta">Productos permitidos y restricciones:</span>
-        <span class="valor">{{ actividad.productos_permitidos_y_restricciones | default('Información no disponible', true) }}</span>
-    </div>
-    <div class="detalle-campo">
-        <span class="etiqueta">Equipo del participante:</span>
-        <span class="valor">{{ actividad.equipo_del_participante | default('Información no disponible', true) }}</span>
-    </div>
-    <div class="detalle-campo">
-        <span class="etiqueta">Equipo y servicios de organización:</span>
-        <span class="valor">{{ actividad.equipo_y_servicios_organizacion | default('Información no disponible', true) }}</span>
-    </div>
-    <div class="detalle-campo">
-        <span class="etiqueta">Condiciones especiales:</span>
-        <span class="valor">{{ actividad.condiciones_especiales | default('Información no disponible', true) }}</span>
-    </div>
-</div>
-
-<!-- Inscripción y cupos -->
-<div class="detalle-bloque">
-    <h3>6. Inscripción y cupos</h3>
+    <h3>7. Inscripciones y cupos</h3>
     <div class="detalle-campo">
         <span class="etiqueta">Quiénes pueden inscribirse:</span>
-        <span class="valor">{{ actividad.quienes_pueden_inscribirse | default('Información no disponible', true) }}</span>
+        <span class="valor">{{ evento.get('Quiénes pueden inscribirse', 'Información pendiente') }}</span>
     </div>
     <div class="detalle-campo">
         <span class="etiqueta">Fecha límite de inscripción:</span>
-        <span class="valor">{{ actividad.fecha_limite_inscripcion | formato_fecha | default('Información no disponible', true) }} {{ actividad.hora_limite_inscripcion | formato_hora | default('') }}</span>
+        <span class="valor">{{ evento.get('Fecha límite de inscripción') | formato_fecha | default('Información pendiente', true) }}</span>
     </div>
     <div class="detalle-campo">
-        <span class="etiqueta">Estado de inscripción:</span>
-        <span class="valor">{{ actividad.estado_inscripcion | default('Información no disponible', true) }}</span>
+        <span class="etiqueta">Fecha límite para cancelar:</span>
+        <span class="valor">{{ evento.get('Fecha límite para cancelar la inscripción') | formato_fecha | default('Información pendiente', true) }}</span>
     </div>
     <div class="detalle-campo">
-        <span class="etiqueta">Espacios disponibles:</span>
-        <span class="valor">{{ actividad.espacios_disponibles | default('Información no disponible', true) }}</span>
+        <span class="etiqueta">Cantidad total de cupos:</span>
+        <span class="valor">{{ evento.get('Cantidad total de cupos', 'Información pendiente') }}</span>
     </div>
     <div class="detalle-campo">
-        <span class="etiqueta">Verificación de espacios:</span>
-        <span class="valor">{{ actividad.verificacion_espacios | formato_fecha | default('Información no disponible', true) }}</span>
-    </div>
-    <div class="detalle-campo">
-        <span class="etiqueta">Lista de espera:</span>
-        <span class="valor">{{ actividad.lista_de_espera | default('Información no disponible', true) }}</span>
+        <span class="etiqueta">Cupos disponibles:</span>
+        <span class="valor">{{ evento.get('Cupos disponibles', 'Información pendiente') }}</span>
     </div>
 </div>
 
-<!-- Contacto y actualización -->
+<!-- 8. Coordinación y comentarios adicionales -->
 <div class="detalle-bloque">
-    <h3>7. Contacto y actualización</h3>
+    <h3>7. Coordinación y comentarios adicionales</h3>
     <div class="detalle-campo">
-        <span class="etiqueta">Contacto autorizado:</span>
-        <span class="valor">{{ actividad.contacto_autorizado_practica | default('Información no disponible', true) }}</span>
+        <span class="etiqueta">Coordinador del evento:</span>
+        <span class="valor">{{ evento.get('Coordinador del evento', 'Información pendiente') }}</span>
     </div>
     <div class="detalle-campo">
-        <span class="etiqueta">Cargo del contacto:</span>
-        <span class="valor">{{ actividad.cargo_del_contacto | default('Información no disponible', true) }}</span>
+        <span class="etiqueta">WhatsApp de coordinación:</span>
+        <span class="valor">{{ evento.get('WhatsApp de coordinación', 'Información pendiente') }}</span>
     </div>
     <div class="detalle-campo">
-        <span class="etiqueta">Teléfono o WhatsApp:</span>
-        <span class="valor">{{ actividad.telefono_whatsapp_practica | default('No habilitado en el ejercicio', true) }}</span>
-    </div>
-    <div class="detalle-campo">
-        <span class="etiqueta">Correo electrónico:</span>
-        <span class="valor">{{ actividad.correo_practica | default('Información no disponible', true) }}</span>
-    </div>
-    <div class="detalle-campo">
-        <span class="etiqueta">Horario del contacto:</span>
-        <span class="valor">{{ actividad.horario_del_contacto | default('Información no disponible', true) }}</span>
-    </div>
-    <div class="detalle-campo">
-        <span class="etiqueta">Última actualización:</span>
-        <span class="valor">{{ actividad.ultima_actualizacion | formato_fecha | default('Información no disponible', true) }}</span>
+        <span class="etiqueta">Comentarios adicionales:</span>
+        <span class="valor">{{ evento.get('Comentarios adicionales', 'Información pendiente') }}</span>
     </div>
 </div>
 
 <!-- Botones de acción -->
 <div class="btn-group" style="margin-top: var(--espacio);">
-    <a href="{{ url_for('chat', codigo=actividad.codigo) }}" class="btn">Consultar sobre esta feria</a>
+    <a href="{{ url_for('chat', nombre=evento.get('Nombre del evento', '')) }}" class="btn">Consultar sobre este evento</a>
     <a href="{{ url_for('inicio') }}" class="btn btn-secundario">Volver al listado</a>
 </div>
 

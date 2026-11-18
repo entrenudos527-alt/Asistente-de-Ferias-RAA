@@ -1,5 +1,5 @@
 """
-Fábrica de la aplicación Flask.
+Fábrica de la aplicación Flask — Asistente de Eventos RAA.
 
 Patrón MVC: aquí se registran controladores y servicios.
 La llave de IA se lee de .env (nunca hardcodeada).
@@ -9,7 +9,13 @@ import os
 from flask import Flask, jsonify, render_template, request, redirect, url_for
 
 from dotenv import load_dotenv
-from app.utils.formato import formato_fecha, formato_hora, formato_fecha_hora
+from app.utils.formato import (
+    formatear_fecha as formato_fecha,
+    formatear_hora as formato_hora,
+    formatear_fecha_hora as formato_fecha_hora,
+    formatear_monto,
+    formatear_rango_fechas,
+)
 
 # Cargar variables de entorno desde .env si existe
 load_dotenv()
@@ -25,14 +31,14 @@ def create_app():
 
     app.config.from_mapping(
         SECRET_KEY=secret_key,
-        DEMO_DATE="2026-11-04T12:00:00",
-        DEMO_TIMEZONE="America/Costa_Rica",
     )
 
-    # Registrar filtros de Jinja2 para formateo de fechas y horas
+    # Registrar filtros de Jinja2 para formateo de fechas, horas y montos
     app.jinja_env.filters["formato_fecha"] = formato_fecha
     app.jinja_env.filters["formato_hora"] = formato_hora
     app.jinja_env.filters["formato_fecha_hora"] = formato_fecha_hora
+    app.jinja_env.filters["formato_monto"] = formatear_monto
+    app.jinja_env.filters["formato_rango_fechas"] = formatear_rango_fechas
 
     # ========================================================================
     # Rutas públicas
@@ -52,158 +58,76 @@ def create_app():
 
     @app.route("/inicio", endpoint="inicio")
     def pantalla_inicio():
-        from app.services.lectura_datos import leer_actividades
-        from datetime import datetime
+        from app.services.lectura_eventos import (
+            leer_eventos,
+            obtener_todos_los_eventos,
+        )
 
-        datos = leer_actividades()
-        registros = datos["registros"]
-        fecha_ref = datetime.fromisoformat(app.config["DEMO_DATE"])
+        datos = leer_eventos()
+        eventos = datos["registros"]
+        tipos_evento = datos["tipos_evento"]
 
-        actividades = []
-        proximas = 0
-        canceladas = 0
+        # Contadores
+        total = len(eventos)
+        por_tipo = {}
+        for ev in eventos:
+            tipo = str(ev.get("Tipo de evento", "")).strip()
+            if tipo:
+                por_tipo[tipo] = por_tipo.get(tipo, 0) + 1
 
-        for reg in registros:
-            estado = str(reg.get("Estado de la feria", "")).lower()
-            if estado in {"cancelada", "finalizada"}:
-                canceladas += 1
-            else:
-                fecha_inicio = reg.get("Fecha de inicio")
-                if fecha_inicio:
-                    try:
-                        fi = datetime.fromisoformat(str(fecha_inicio))
-                        if fi >= fecha_ref:
-                            proximas += 1
-                    except (ValueError, TypeError):
-                        pass
-            actividades.append(
+        # Normalizar eventos para la plantilla
+        eventos_vista = []
+        for ev in eventos:
+            eventos_vista.append(
                 {
-                    "codigo": str(reg.get("Identificador", "")),
-                    "nombre": str(reg.get("Actividad", "")),
-                    "lugar": str(reg.get("Lugar", "")),
-                    "fecha": str(reg.get("Fecha de inicio", "")),
-                    "horario_atencion": reg.get("Inicio de atención simulado"),
-                    "estado_actividad": str(reg.get("Estado de la feria", "")),
-                    "estado_inscripcion": str(reg.get("Estado de inscripción", "")),
+                    "nombre": str(ev.get("Nombre del evento", "")),
+                    "tipo": str(ev.get("Tipo de evento", "")),
+                    "lugar": str(ev.get("Lugar del evento", "")),
+                    "fecha_inicio": ev.get("Fecha de inicio"),
+                    "fecha_fin": ev.get("Fecha de finalización"),
+                    "hora_inicio": ev.get("Hora de inicio del evento"),
+                    "hora_fin": ev.get("Hora finalización del evento"),
                 }
             )
 
         return render_template(
             "inicio.html",
-            actividades=actividades,
-            total_registros=len(actividades),
-            contador_proximas=proximas,
-            contador_canceladas=canceladas,
+            eventos=eventos_vista,
+            total_registros=total,
+            tipos_evento=tipos_evento,
+            conteo_por_tipo=por_tipo,
         )
 
-    @app.route("/detalle/<codigo>", endpoint="detalle")
-    def pantalla_detalle(codigo):
-        from app.services.lectura_datos import obtener_actividad_por_codigo
+    @app.route("/detalle/<nombre_evento>", endpoint="detalle")
+    def pantalla_detalle(nombre_evento):
+        from app.services.lectura_eventos import obtener_evento_por_nombre
 
-        registro = obtener_actividad_por_codigo(codigo)
+        registro = obtener_evento_por_nombre(nombre_evento)
         if registro is None:
-            return jsonify({"error": f"Actividad {codigo} no encontrada"}), 404
+            return jsonify({"error": f"Evento '{nombre_evento}' no encontrado"}), 404
 
-        # Normalizar claves del Excel (con espacios) a snake_case para las plantillas
-        actividad = {
-            "codigo": str(registro.get("Identificador", "")),
-            "nombre": str(registro.get("Actividad", "")),
-            "organiza": str(registro.get("Organiza", "")),
-            "fecha_inicio": registro.get("Fecha de inicio"),
-            "fecha_finalizacion": registro.get("Fecha de finalización"),
-            "dias_participacion": str(registro.get("Días de participación", "")),
-            "lugar": str(registro.get("Lugar", "")),
-            "direccion_exacta_practica": str(
-                registro.get("Dirección exacta de práctica", "")
-            ),
-            "enlace_ubicacion_practica": str(
-                registro.get("Enlace de ubicación de práctica", "")
-            ),
-            "acceso_y_parqueo": str(registro.get("Acceso y parqueo", "")),
-            "ingreso_y_montaje": registro.get("Ingreso y montaje"),
-            "salida_y_desmontaje": registro.get("Salida y desmontaje"),
-            "inicio_atencion_simulado": registro.get("Inicio de atención simulado"),
-            "cierre_atencion_simulado": registro.get("Cierre de atención simulado"),
-            "costo_participacion": str(registro.get("Costo de participación", "")),
-            "moneda": str(registro.get("Moneda", "")),
-            "unidad_cobro": str(registro.get("Unidad de cobro", "")),
-            "incluye_el_costo": str(registro.get("Incluye el costo", "")),
-            "forma_de_pago": str(registro.get("Forma de pago", "")),
-            "fecha_limite_de_pago": registro.get("Fecha límite de pago"),
-            "requisitos": str(registro.get("Requisitos", "")),
-            "productos_permitidos_y_restricciones": str(
-                registro.get("Productos permitidos y restricciones", "")
-            ),
-            "equipo_del_participante": str(registro.get("Equipo del participante", "")),
-            "equipo_y_servicios_organizacion": str(
-                registro.get("Equipo y servicios de organización", "")
-            ),
-            "condiciones_especiales": str(registro.get("Condiciones especiales", "")),
-            "quienes_pueden_inscribirse": str(
-                registro.get("Quiénes pueden inscribirse", "")
-            ),
-            "fecha_limite_inscripcion": registro.get("Fecha límite de inscripción"),
-            "hora_limite_inscripcion": registro.get("Hora límite de inscripción"),
-            "procedimiento_inscripcion": str(
-                registro.get("Procedimiento de inscripción", "")
-            ),
-            "canal_inscripcion_practica": str(
-                registro.get("Canal de inscripción de práctica", "")
-            ),
-            "documentos_requeridos": str(registro.get("Documentos requeridos", "")),
-            "confirmacion_participacion": str(
-                registro.get("Confirmación de participación", "")
-            ),
-            "estado_inscripcion": str(registro.get("Estado de inscripción", "")),
-            "espacios_disponibles": str(registro.get("Espacios disponibles", "")),
-            "verificacion_espacios": registro.get("Verificación de espacios"),
-            "lista_de_espera": str(registro.get("Lista de espera", "")),
-            "contacto_autorizado_practica": str(
-                registro.get("Contacto autorizado de práctica", "")
-            ),
-            "cargo_del_contacto": str(registro.get("Cargo del contacto", "")),
-            "telefono_whatsapp_practica": str(
-                registro.get("Teléfono o WhatsApp de práctica", "")
-            ),
-            "correo_practica": str(registro.get("Correo de práctica", "")),
-            "horario_del_contacto": str(registro.get("Horario del contacto", "")),
-            "fuente_oficial_practica": str(
-                registro.get("Fuente oficial de práctica", "")
-            ),
-            "responsable_actualizacion": str(
-                registro.get("Responsable de actualización", "")
-            ),
-            "ultima_actualizacion": registro.get("Última actualización"),
-            "estado_feria": str(registro.get("Estado de la feria", "")),
-            "cambios_avisos_practica": str(
-                registro.get("Cambios y avisos de práctica", "")
-            ),
-            "informacion_pendiente": str(registro.get("Información pendiente", "")),
-            "regla_asistente": str(registro.get("Regla para el asistente", "")),
-            "naturaleza_datos": str(registro.get("Naturaleza de los datos", "")),
-            "campos_simulados": str(registro.get("Campos simulados", "")),
-        }
-
-        return render_template("detalle.html", actividad=actividad)
+        return render_template("detalle.html", evento=registro)
 
     @app.route("/chat", endpoint="chat")
     def pantalla_chat():
-        codigo = request.args.get("codigo")
         nombre = request.args.get("nombre")
 
-        actividad_seleccionada = None
-        if codigo:
-            from app.services.lectura_datos import obtener_actividad_por_codigo
+        evento_seleccionado = None
+        if nombre:
+            from app.services.lectura_eventos import obtener_evento_por_nombre
 
-            actividad_seleccionada = obtener_actividad_por_codigo(codigo)
+            evento_seleccionado = obtener_evento_por_nombre(nombre)
 
         return render_template(
             "resultados.html",
-            actividad_seleccionada=actividad_seleccionada,
+            evento_seleccionado=evento_seleccionado,
             historial=[],
             preguntas_sugeridas=[
-                "¿Cuánto cuesta participar?",
-                "¿Qué debo llevar?",
+                "¿Cuándo es el evento?",
+                "¿Dónde se lleva a cabo?",
+                "¿Cuál es el costo de participación?",
+                "¿Hay cupos disponibles?",
+                "¿Cuál es el coordinador?",
             ],
         )
 
@@ -232,7 +156,7 @@ def create_app():
 
         datos = request.get_json(silent=True) or {}
         pregunta = datos.get("pregunta", "")
-        contexto = datos.get("codigo")
+        contexto = datos.get("nombre")
 
         resultado = procesar_pregunta(pregunta, contexto_visible=contexto)
 
@@ -248,11 +172,14 @@ def create_app():
     def chat_nueva():
         return render_template(
             "resultados.html",
-            actividad_seleccionada=None,
+            evento_seleccionado=None,
             historial=[],
             preguntas_sugeridas=[
-                "¿Cuánto cuesta participar?",
-                "¿Qué debo llevar?",
+                "¿Cuándo es el evento?",
+                "¿Dónde se lleva a cabo?",
+                "¿Cuál es el costo de participación?",
+                "¿Hay cupos disponibles?",
+                "¿Cuál es el coordinador?",
             ],
         )
 
@@ -262,11 +189,11 @@ def create_app():
 
     @app.route("/admin", endpoint="admin_panel")
     def admin_panel():
-        from app.services.lectura_datos import leer_actividades
+        from app.services.lectura_eventos import leer_eventos
 
-        datos = leer_actividades()
-        actividades = datos["registros"]
+        datos = leer_eventos()
+        eventos = datos["registros"]
 
-        return render_template("inicio.html", actividades=actividades, admin=True)
+        return render_template("inicio.html", eventos=eventos, admin=True)
 
     return app
