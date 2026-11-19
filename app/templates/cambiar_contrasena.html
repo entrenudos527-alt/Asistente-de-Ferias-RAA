@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Cambiar contraseña — Asistente de Eventos RAA{% endblock %}
+
+{% block subtitulo %}
+Actualizá la contraseña de tu cuenta.
+{% endblock %}
+
+{% block contenido %}
+<div class="acceso">
+    {% if obligatorio %}
+    <div class="aviso aviso-credencial">
+        Estás usando una contraseña temporal. Cambiala ahora para poder continuar.
+    </div>
+    {% endif %}
+
+    {% if error %}
+    <div class="aviso aviso-error">{{ error }}</div>
+    {% endif %}
+
+    <div class="formulario">
+        <h2>Cambiar contraseña</h2>
+        <p class="nota" style="margin-bottom: 1rem;">
+            Mínimo 8 caracteres. Las contraseñas se guardan cifradas: nadie puede
+            consultar la anterior, ni siquiera la persona administradora.
+        </p>
+
+        <form method="post" action="{{ url_for('cambiar_contrasena') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="campo">
+                <label for="actual">Contraseña actual</label>
+                <input type="password" id="actual" name="actual"
+                       autocomplete="current-password" required
+                       {% if obligatorio %}value=""{% endif %}>
+                {% if obligatorio %}
+                <span class="ayuda">Escribí la contraseña temporal que recibiste.</span>
+                {% endif %}
+            </div>
+
+            <div class="campo">
+                <label for="nueva">Contraseña nueva</label>
+                <input type="password" id="nueva" name="nueva"
+                       autocomplete="new-password" required minlength="8">
+            </div>
+
+            <div class="campo">
+                <label for="confirmacion">Repetir contraseña nueva</label>
+                <input type="password" id="confirmacion" name="confirmacion"
+                       autocomplete="new-password" required minlength="8">
+            </div>
+
+            <button type="submit" class="btn" style="width: 100%;">Guardar contraseña</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

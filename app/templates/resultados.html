@@ -8,13 +8,6 @@ Haz tu pregunta sobre un evento y recibe una respuesta basada en el registro ofi
 
 {% block fecha_demo %}{% endblock %}
 
-{% block navegacion %}
-<nav>
-    <a href="{{ url_for('inicio') }}">Volver al listado</a>
-    <a href="{{ url_for('admin_panel') }}">Administración</a>
-</nav>
-{% endblock %}
-
 {% block contenido %}
 <!-- Indicador de evento seleccionado (contexto visible) -->
 {% if evento_seleccionado %}
@@ -80,11 +73,22 @@ Haz tu pregunta sobre un evento y recibe una respuesta basada en el registro ofi
         document.getElementById('btn-enviar').textContent = 'Consultando...';
 
         try {
+            const token = document.querySelector('meta[name="csrf-token"]').content;
             const respuesta = await fetch('/chat/enviar', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ pregunta: texto })
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': token
+                },
+                body: JSON.stringify({ pregunta: texto, csrf_token: token })
             });
+
+            // Sesión vencida: volver al ingreso conservando la página
+            if (respuesta.redirected || respuesta.status === 401) {
+                window.location.href = '/login';
+                return;
+            }
+
             const data = await respuesta.json();
 
             // Mostrar respuesta del asistente

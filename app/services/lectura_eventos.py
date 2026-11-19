@@ -13,13 +13,38 @@ from datetime import datetime, date, time
 
 import openpyxl
 
-RUTA_EXCEL = os.path.join(
+# Archivo original de insumos (no se modifica nunca)
+RUTA_EXCEL_INSUMOS = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
     "Insumos",
     "Plantilla_Eventos_RAA (1).xlsx",
 )
 
+# Copia de trabajo que puede reemplazar la persona administradora
+RUTA_EXCEL_TRABAJO = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+    "datos",
+    "eventos.xlsx",
+)
+
 HOJA_EVENTOS = "Eventos"
+
+
+def ruta_excel_activa() -> str:
+    """
+    Devuelve el Excel que se usa como fuente de eventos.
+
+    Prioridad:
+      1. RAA_EXCEL_PATH (variable de entorno, opcional).
+      2. datos/eventos.xlsx (versión cargada por administración).
+      3. Insumos/Plantilla_Eventos_RAA (1).xlsx (archivo original).
+    """
+    ruta_entorno = os.environ.get("RAA_EXCEL_PATH")
+    if ruta_entorno and os.path.exists(ruta_entorno):
+        return ruta_entorno
+    if os.path.exists(RUTA_EXCEL_TRABAJO):
+        return RUTA_EXCEL_TRABAJO
+    return RUTA_EXCEL_INSUMOS
 
 
 def _parse_fecha_o_hora(valor: Any) -> Any:
@@ -72,7 +97,7 @@ def leer_eventos(
             - "tipos_evento": lista de tipos únicos
     """
     if ruta_excel is None:
-        ruta_excel = RUTA_EXCEL
+        ruta_excel = ruta_excel_activa()
 
     wb = openpyxl.load_workbook(ruta_excel, data_only=True)
     ws = wb[HOJA_EVENTOS]

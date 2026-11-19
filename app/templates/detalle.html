@@ -8,13 +8,6 @@ Ficha completa de {{ evento['Nombre del evento'] }}
 
 {% block fecha_demo %}{% endblock %}
 
-{% block navegacion %}
-<nav>
-    <a href="{{ url_for('inicio') }}">Volver al listado</a>
-    <a href="{{ url_for('admin_panel') }}">Administración</a>
-</nav>
-{% endblock %}
-
 {% block contenido %}
 <!-- Botón volver -->
 <div style="margin-bottom: var(--espacio);">

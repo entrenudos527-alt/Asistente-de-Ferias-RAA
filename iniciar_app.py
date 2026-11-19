@@ -15,7 +15,29 @@ from app import create_app
 
 HOST = "127.0.0.1"
 PORT = 5000
-URL = f"http://{HOST}:{PORT}/inicio"
+URL = f"http://{HOST}:{PORT}/login"
+
+
+def _hay_cuentas() -> bool:
+    """Indica si ya existe al menos una cuenta en la base."""
+    from app.services import base_datos
+
+    base_datos.inicializar_base_datos()
+    return base_datos.contar_usuarios() > 0
+
+
+def _aviso_primera_cuenta() -> None:
+    """Recuerda cómo crear la primera cuenta administradora."""
+    if _hay_cuentas():
+        return
+    print("")
+    print("  Todavía no hay cuentas registradas.")
+    print("  Creá la primera cuenta administradora con:")
+    print("")
+    print("      .venv\\Scripts\\python -m flask --app wsgi crear-admin")
+    print("")
+    print("  Después podés iniciar sesión y crear las demás cuentas.")
+    print("")
 
 
 def _puerto_abierto() -> bool:
@@ -50,6 +72,7 @@ def main() -> None:
     print(f"  Dirección: {URL}")
     print("  Para detener el servidor: cerrá esta ventana o Ctrl + C")
     print("=" * 60)
+    _aviso_primera_cuenta()
 
     # use_reloader=False para no abrir dos procesos ni el navegador dos veces.
     app.run(host=HOST, port=PORT, debug=False, use_reloader=False, threaded=True)

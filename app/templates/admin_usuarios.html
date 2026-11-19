@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Usuarios — Asistente de Eventos RAA{% endblock %}
+
+{% block subtitulo %}
+Creá cuentas, asigná roles, desactivá accesos y generá contraseñas temporales.
+{% endblock %}
+
+{% block contenido %}
+<div class="formulario">
+    <h2>Crear cuenta</h2>
+    <p class="nota" style="margin-bottom: 0.9rem;">
+        No hay registro público: solo desde acá se crean las cuentas. La contraseña
+        temporal se muestra una única vez; la persona debe cambiarla al ingresar.
+    </p>
+
+    <form method="post" action="{{ url_for('admin_usuarios_crear') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="campo">
+            <label for="correo">Correo electrónico</label>
+            <input type="email" id="correo" name="correo" required
+                   placeholder="persona@ejemplo.com" autocomplete="off">
+        </div>
+
+        <div class="campo">
+            <label for="nombre">Nombre completo</label>
+            <input type="text" id="nombre" name="nombre" required
+                   placeholder="Nombre y apellidos" autocomplete="off">
+        </div>
+
+        <div class="campo">
+            <label for="rol">Rol</label>
+            <select id="rol" name="rol">
+                <option value="usuario">Usuario: consulta eventos y usa el asistente</option>
+                <option value="administrador">Administrador: además gestiona cuentas y datos</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn">Crear cuenta con contraseña temporal</button>
+    </form>
+</div>
+
+<h2 style="font-size: 1.1rem; margin-bottom: 0.6rem;">Cuentas registradas</h2>
+<p class="nota" style="margin-bottom: 0.6rem;">
+    Se bloquea el ingreso después de {{ max_intentos }} intentos fallidos en
+    {{ ventana_minutos }} minutos. Las contraseñas nuevas deben tener al menos
+    {{ largo_minimo }} caracteres.
+</p>
+
+<div class="tabla-envoltura">
+    <table class="tabla-usuarios">
+        <thead>
+            <tr>
+                <th>Correo</th>
+                <th>Nombre</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th>Contraseña</th>
+                <th>Último acceso</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in usuarios %}
+            <tr>
+                <td>{{ u['correo'] }}</td>
+                <td>{{ u['nombre'] or '—' }}</td>
+                <td>{{ 'Administrador' if u['rol'] == 'administrador' else 'Usuario' }}</td>
+                <td>
+                    {% if u['activo'] %}
+                    <span class="estado-activo">Activa</span>
+                    {% else %}
+                    <span class="estado-inactivo">Desactivada</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if u['debe_cambiar_contrasena'] %}
+                    Temporal (debe cambiarla)
+                    {% else %}
+                    Personal
+                    {% endif %}
+                </td>
+                <td>{{ u['ultimo_acceso'] or 'Sin ingresos' }}</td>
+                <td>
+                    <div class="acciones-fila">
+                        <form method="post"
+                              action="{{ url_for('admin_usuario_estado', usuario_id=u['id']) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            {% if u['activo'] %}
+                            <input type="hidden" name="accion" value="desactivar">
+                            <button type="submit" class="btn btn-secundario btn-chico">Desactivar</button>
+                            {% else %}
+                            <input type="hidden" name="accion" value="activar">
+                            <button type="submit" class="btn btn-chico">Activar</button>
+                            {% endif %}
+                        </form>
+
+                        <form method="post"
+                              action="{{ url_for('admin_usuario_restablecer', usuario_id=u['id']) }}"
+                              onsubmit="return confirm('¿Generar una contraseña temporal nueva para {{ u['correo'] }}? La contraseña anterior dejará de funcionar.');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-secundario btn-chico">Nueva temporal</button>
+                        </form>
+
+                        <form method="post"
+                              action="{{ url_for('admin_usuario_rol', usuario_id=u['id']) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <select name="rol" class="btn-chico">
+                                <option value="usuario" {% if u['rol'] == 'usuario' %}selected{% endif %}>Usuario</option>
+                                <option value="administrador" {% if u['rol'] == 'administrador' %}selected{% endif %}>Administrador</option>
+                            </select>
+                            <button type="submit" class="btn btn-secundario btn-chico">Cambiar rol</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+            {% if not usuarios %}
+            <tr>
+                <td colspan="7">Todavía no hay cuentas registradas.</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<p class="nota">
+    No es posible ver ni recuperar contraseñas anteriores: solo generar una
+    contraseña temporal nueva.
+</p>
+{% endblock %}

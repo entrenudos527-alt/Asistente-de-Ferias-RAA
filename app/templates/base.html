@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{% block title %}Asistente de Eventos RAA{% endblock %}</title>
     <style>
         /* ================================================================
@@ -438,6 +439,197 @@
             border: 1px solid var(--color-exito);
         }
 
+        /* ================================================================
+           Acceso, formularios de administración y avisos
+           ================================================================ */
+
+        .barra-usuario {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            background-color: var(--color-fondo-secundario);
+            border: 1px solid var(--color-borde);
+            border-radius: var(--radio);
+            padding: 0.4rem 0.75rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--color-texto-secundario);
+        }
+
+        .barra-usuario .rol {
+            display: inline-block;
+            background-color: var(--color-fondo);
+            border: 1px solid var(--color-acento);
+            border-radius: 999px;
+            padding: 0.05rem 0.6rem;
+            margin-left: 0.4rem;
+            font-size: 0.75rem;
+            color: var(--color-acento);
+        }
+
+        .form-salir {
+            margin: 0;
+        }
+
+        .btn-chico {
+            padding: 0.3rem 0.75rem;
+            font-size: 0.8rem;
+        }
+
+        .formulario {
+            background-color: var(--color-fondo-secundario);
+            border: 1px solid var(--color-borde);
+            border-radius: var(--radio);
+            padding: var(--espacio);
+            margin-bottom: var(--espacio);
+        }
+
+        .formulario h2 {
+            color: var(--color-acento);
+            font-size: 1.1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .campo {
+            margin-bottom: 0.75rem;
+        }
+
+        .campo label {
+            display: block;
+            color: var(--color-texto);
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .campo input,
+        .campo select {
+            width: 100%;
+            padding: 0.55rem 0.7rem;
+            border: 1px solid var(--color-borde);
+            border-radius: var(--radio);
+            background-color: var(--color-fondo);
+            color: var(--color-texto);
+            font-size: 0.95rem;
+        }
+
+        .campo input:focus,
+        .campo select:focus {
+            outline: 2px solid var(--color-acento);
+            outline-offset: 1px;
+        }
+
+        .ayuda {
+            display: block;
+            color: var(--color-texto-secundario);
+            font-size: 0.78rem;
+            margin-top: 0.2rem;
+        }
+
+        .acceso {
+            max-width: 460px;
+            margin: 1.5rem auto;
+        }
+
+        .acceso .formulario {
+            padding: 1.25rem;
+        }
+
+        .tabla-usuarios {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: var(--color-fondo-secundario);
+            border: 1px solid var(--color-borde);
+            border-radius: var(--radio);
+            overflow: hidden;
+            font-size: 0.85rem;
+        }
+
+        .tabla-usuarios th,
+        .tabla-usuarios td {
+            padding: 0.5rem 0.6rem;
+            border-bottom: 1px solid var(--color-borde);
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        .tabla-usuarios th {
+            background-color: #f8f9fa;
+            color: var(--color-acento);
+            font-weight: 700;
+        }
+
+        .tabla-envoltura {
+            overflow-x: auto;
+            margin-bottom: var(--espacio);
+        }
+
+        .estado-activo {
+            color: #2b8a3e;
+            font-weight: 700;
+        }
+
+        .estado-inactivo {
+            color: #c92a2a;
+            font-weight: 700;
+        }
+
+        .acciones-fila {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+        }
+
+        .acciones-fila form {
+            margin: 0;
+        }
+
+        .aviso {
+            border-radius: var(--radio);
+            padding: 0.7rem 0.9rem;
+            margin-bottom: 0.6rem;
+            font-size: 0.9rem;
+            border: 1px solid var(--color-borde);
+            background-color: var(--color-fondo-secundario);
+            color: var(--color-texto);
+        }
+
+        .aviso-error {
+            border-color: var(--color-alerta);
+            background-color: rgba(255, 107, 107, 0.12);
+            color: #b02525;
+        }
+
+        .aviso-exito {
+            border-color: var(--color-exito);
+            background-color: rgba(81, 207, 102, 0.15);
+            color: #2b8a3e;
+        }
+
+        .aviso-credencial {
+            border-color: var(--color-acento);
+            background-color: #f3e8fb;
+            color: var(--color-acento);
+            font-weight: 600;
+        }
+
+        .chip-clave {
+            display: inline-block;
+            background-color: var(--color-fondo);
+            border: 1px dashed var(--color-acento);
+            border-radius: var(--radio);
+            padding: 0.15rem 0.5rem;
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 0.95rem;
+        }
+
+        .nota {
+            color: var(--color-texto-secundario);
+            font-size: 0.82rem;
+        }
+
         /* Responsive */
         @media (max-width: 600px) {
             .contenedor {
@@ -476,7 +668,21 @@
             <span class="fecha-demo">{% block fecha_demo %}{% endblock %}</span>
         </header>
 
-        {% block navegacion %}{% endblock %}
+        {% block navegacion %}
+        {% if usuario_actual %}{% include "_nav.html" %}{% endif %}
+        {% endblock %}
+
+        {% with mensajes = get_flashed_messages(with_categories=true) %}
+        {% if mensajes %}
+        <div class="avisos">
+            {% for categoria, mensaje in mensajes %}
+            <div class="aviso aviso-{{ 'error' if categoria == 'error' else ('credencial' if categoria == 'credencial' else 'exito') }}">
+                {{ mensaje }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
 
         {% block contenido %}{% endblock %}
     </div>

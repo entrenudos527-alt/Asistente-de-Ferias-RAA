@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Ingreso — Asistente de Eventos RAA{% endblock %}
+
+{% block subtitulo %}
+Ingresá con la cuenta que te entregó la persona administradora.
+{% endblock %}
+
+{% block navegacion %}{% endblock %}
+
+{% block contenido %}
+<div class="acceso">
+    {% if error %}
+    <div class="aviso aviso-error">{{ error }}</div>
+    {% endif %}
+
+    <div class="formulario">
+        <h2>Ingreso de personas autorizadas</h2>
+        <p class="nota" style="margin-bottom: 1rem;">
+            No existe registro público. Si todavía no tenés cuenta, pedile a la
+            persona administradora que cree una para vos.
+        </p>
+
+        <form method="post" action="{{ url_for('login', siguiente=siguiente) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="campo">
+                <label for="correo">Correo electrónico</label>
+                <input type="email" id="correo" name="correo" value="{{ correo }}"
+                       autocomplete="username" required autofocus
+                       placeholder="nombre@ejemplo.com">
+            </div>
+
+            <div class="campo">
+                <label for="contrasena">Contraseña</label>
+                <input type="password" id="contrasena" name="contrasena"
+                       autocomplete="current-password" required
+                       placeholder="Tu contraseña">
+            </div>
+
+            <button type="submit" class="btn" style="width: 100%;">Ingresar</button>
+        </form>
+
+        <p class="nota" style="margin-top: 0.9rem;">
+            Si olvidaste la contraseña, la persona administradora puede generarte
+            una contraseña temporal nueva. No es posible recuperar la anterior.
+        </p>
+    </div>
+</div>
+{% endblock %}

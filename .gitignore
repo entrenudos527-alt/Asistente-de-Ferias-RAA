@@ -25,6 +25,9 @@ htmlcov/
 .env.local
 .env.*.local
 
+# Base de datos local de cuentas y copia de trabajo del Excel
+datos/
+
 # IDE
 .vscode/
 .idea/

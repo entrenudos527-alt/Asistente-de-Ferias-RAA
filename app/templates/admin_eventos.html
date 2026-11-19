@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Eventos y Excel — Asistente de Eventos RAA{% endblock %}
+
+{% block subtitulo %}
+Los eventos se leen del Excel. Acá podés cargar una versión nueva del archivo.
+{% endblock %}
+
+{% block contenido %}
+<div class="formulario">
+    <h2>Actualizar la información de eventos</h2>
+    <p class="nota" style="margin-bottom: 0.9rem;">
+        Se lee únicamente la hoja <strong>Eventos</strong>, con los encabezados en la
+        fila 1. La carga reemplaza por completo la versión anterior: no se duplican
+        eventos. El archivo original de <em>Insumos</em> no se modifica.
+    </p>
+
+    <form method="post" action="{{ url_for('admin_eventos_importar') }}"
+          enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="campo">
+            <label for="archivo">Archivo Excel (.xlsx)</label>
+            <input type="file" id="archivo" name="archivo" accept=".xlsx,.xlsm" required>
+            <span class="ayuda">Máximo 10 MB. Debe incluir la hoja “Eventos”.</span>
+        </div>
+
+        <button type="submit" class="btn">Cargar versión del Excel</button>
+    </form>
+
+    {% if usa_copia_trabajo %}
+    <form method="post" action="{{ url_for('admin_eventos_restaurar') }}"
+          style="margin-top: 0.9rem;"
+          onsubmit="return confirm('¿Volver al Excel original de Insumos? Se descarta la copia cargada.');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-secundario">Volver al Excel original</button>
+    </form>
+    {% endif %}
+
+    <p class="nota" style="margin-top: 0.8rem;">
+        Fuente activa: <code>{{ ruta_activa }}</code>
+        {% if usa_copia_trabajo %}(copia cargada por administración){% else %}(archivo de Insumos){% endif %}
+    </p>
+</div>
+
+<h2 style="font-size: 1.1rem; margin-bottom: 0.6rem;">
+    Eventos cargados: {{ total_registros }}
+</h2>
+
+<div class="tabla-envoltura">
+    <table class="tabla-usuarios">
+        <thead>
+            <tr>
+                <th>Evento</th>
+                <th>Tipo</th>
+                <th>Lugar</th>
+                <th>Fecha de inicio</th>
+                <th>Fecha de finalización</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ev in eventos %}
+            <tr>
+                <td>{{ ev.get('Nombre del evento', '') }}</td>
+                <td>{{ ev.get('Tipo de evento', '') }}</td>
+                <td>{{ ev.get('Lugar del evento', '') }}</td>
+                <td>{{ ev.get('Fecha de inicio') | formato_fecha or 'Información pendiente' }}</td>
+                <td>{{ ev.get('Fecha de finalización') | formato_fecha or 'Información pendiente' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

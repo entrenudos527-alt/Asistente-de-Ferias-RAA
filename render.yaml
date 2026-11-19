@@ -13,3 +13,13 @@ services:
         generateValue: true
       - key: API_IA_CLAVE
         sync: false
+      # Cookies de sesión solo por HTTPS (Render sirve por HTTPS)
+      - key: RAA_COOKIE_SEGURA
+        value: "1"
+      # En el plan free el disco es efímero: las cuentas se pierden al
+      # redeployar. Para conservarlas, montá un disco persistente y apuntá
+      # RAA_DB_PATH al archivo dentro de ese disco (por ejemplo
+      # /var/data/raa.db). También podés cambiar la fuente del Excel con
+      # RAA_EXCEL_PATH.
+      - key: RAA_DB_PATH
+        sync: false

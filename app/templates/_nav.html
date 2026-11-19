@@ -1,0 +1,20 @@
+<div class="barra-usuario">
+    <span>
+        {{ usuario_actual['nombre'] or usuario_actual['correo'] }}
+        <span class="rol">{{ 'Administrador' if es_admin else 'Usuario' }}</span>
+    </span>
+    <form method="post" action="{{ url_for('logout') }}" class="form-salir">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-secundario btn-chico">Cerrar sesión</button>
+    </form>
+</div>
+
+<nav>
+    <a href="{{ url_for('inicio') }}">Listado de eventos</a>
+    <a href="{{ url_for('chat') }}">Asistente</a>
+    <a href="{{ url_for('cambiar_contrasena') }}">Cambiar contraseña</a>
+    {% if es_admin %}
+    <a href="{{ url_for('admin_usuarios') }}">Usuarios</a>
+    <a href="{{ url_for('admin_eventos') }}">Eventos (Excel)</a>
+    {% endif %}
+</nav>
