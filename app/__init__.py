@@ -143,6 +143,57 @@ PREGUNTAS_SUGERIDAS = [
 # ============================================================================
 
 
+def _crear_admin_desde_entorno(app) -> None:
+    """
+    Crea la primera cuenta administradora desde variables de entorno.
+
+    Pensado para servidores donde no es cómodo abrir una consola (Render,
+    por ejemplo). Solo actúa cuando la base todavía no tiene ninguna cuenta:
+    nunca sobrescribe cuentas ni contraseñas existentes.
+    """
+    from app.services import autenticacion, base_datos
+
+    correo = os.environ.get("RAA_ADMIN_CORREO", "").strip()
+    clave = os.environ.get("RAA_ADMIN_CLAVE", "")
+    nombre = os.environ.get("RAA_ADMIN_NOMBRE", "").strip() or "Administración RAA"
+
+    if not correo or not clave:
+        return
+
+    if base_datos.contar_usuarios() > 0:
+        return
+
+    valido, mensaje = autenticacion.validar_correo(correo)
+    if not valido:
+        app.logger.warning("RAA_ADMIN_CORREO no es válido: %s", mensaje)
+        return
+
+    valido, mensaje = autenticacion.validar_contrasena(clave)
+    if not valido:
+        app.logger.warning("RAA_ADMIN_CLAVE no es válida: %s", mensaje)
+        return
+
+    try:
+        base_datos.crear_usuario(
+            correo=correo,
+            nombre=nombre,
+            rol=base_datos.ROL_ADMINISTRADOR,
+            hash_contrasena=autenticacion.hash_contrasena(clave),
+            debe_cambiar_contrasena=False,
+            activo=True,
+        )
+        app.logger.info(
+            "Cuenta administradora inicial creada desde variables de entorno: %s",
+            correo,
+        )
+    except Exception as error:  # noqa: BLE001
+        # Con varios workers puede ocurrir que otro proceso la cree primero.
+        # No se debe impedir el arranque por eso.
+        app.logger.warning(
+            "No se creó la cuenta administradora desde el entorno: %s", error
+        )
+
+
 def create_app():
     """Crea y configura la aplicación Flask."""
     from app.services import base_datos, autenticacion
@@ -175,6 +226,9 @@ def create_app():
 
     # Base de datos de cuentas (tablas creadas si faltan)
     base_datos.inicializar_base_datos()
+
+    # Primera cuenta administradora desde variables de entorno (Render)
+    _crear_admin_desde_entorno(app)
 
     # Registrar filtros de Jinja2 para formateo de fechas, horas y montos
     app.jinja_env.filters["formato_fecha"] = formato_fecha

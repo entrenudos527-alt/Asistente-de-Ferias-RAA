@@ -16,6 +16,15 @@ services:
       # Cookies de sesión solo por HTTPS (Render sirve por HTTPS)
       - key: RAA_COOKIE_SEGURA
         value: "1"
+      # Primera cuenta administradora. El valor de la clave se carga a mano
+      # en el panel de Render (sync: false) y solo se usa cuando la base
+      # todavía no tiene cuentas. Nunca sobrescribe una cuenta existente.
+      - key: RAA_ADMIN_CORREO
+        sync: false
+      - key: RAA_ADMIN_CLAVE
+        sync: false
+      - key: RAA_ADMIN_NOMBRE
+        value: "Administración RAA"
       # En el plan free el disco es efímero: las cuentas se pierden al
       # redeployar. Para conservarlas, montá un disco persistente y apuntá
       # RAA_DB_PATH al archivo dentro de ese disco (por ejemplo

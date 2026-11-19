@@ -38,6 +38,21 @@ Luego ingresá en <http://127.0.0.1:5000/login>.
 
 > Si usás `uv`: `uv run flask --app wsgi crear-admin`.
 
+### Alternativa para Render: variables de entorno
+
+En Render (plan free) no hay consola, así que la primera cuenta administradora
+se puede crear con variables de entorno:
+
+| Variable | Ejemplo | Para qué |
+|---|---|---|
+| `RAA_ADMIN_CORREO` | `admin@raa.cr` | Correo de la primera cuenta |
+| `RAA_ADMIN_CLAVE` | `una-clave-larga` | Contraseña inicial (mínimo 8 caracteres) |
+| `RAA_ADMIN_NOMBRE` | `Administración RAA` | Nombre visible (opcional) |
+
+Solo se usa cuando la base todavía no tiene **ninguna** cuenta: si ya existe
+una, no la duplica ni sobrescribe su contraseña. El paso a paso está en la
+sección 6.
+
 ## 2. Agregar a las demás personas
 
 1. Ingresá como administrador.
@@ -100,13 +115,43 @@ comando extra.
 
 - Build: `pip install -r requirements.txt`
 - Start: `gunicorn wsgi:application --bind 0.0.0.0:$PORT --workers 2`
-- Variables: `SECRET_KEY`, `API_IA_CLAVE`, `RAA_COOKIE_SEGURA=1` y,
-  opcionalmente, `RAA_DB_PATH`.
-- En el plan free el disco es efímero: al redeployar se pierden las cuentas.
-  Para conservarlas, montá un disco persistente y apuntá `RAA_DB_PATH` a un
-  archivo dentro de ese disco (por ejemplo `/var/data/raa.db`).
-- Después del primer despliegue, creá la cuenta administradora desde la
-  consola del servicio en Render con el mismo comando `flask --app wsgi crear-admin`.
+
+### 6.1 Cargar la cuenta administradora desde el panel
+
+Render no tiene un usuario y contraseña propios para la aplicación: se cargan
+como **variables de entorno** con los nombres que lee el código.
+
+1. Entrá a <https://dashboard.render.com> y abrí el servicio
+   `asistente-ferias-raa`.
+2. En el menú lateral, elegí **Environment**.
+3. En **Environment Variables**, tocá **Add Environment Variable** y cargá:
+
+   | Key | Value |
+   |---|---|
+   | `RAA_ADMIN_CORREO` | tu correo, por ejemplo `admin@raa.cr` |
+   | `RAA_ADMIN_CLAVE` | una contraseña de 8 caracteres o más |
+   | `RAA_ADMIN_NOMBRE` | opcional, por ejemplo `Administración RAA` |
+
+4. Verificá que también estén `SECRET_KEY` (Render la genera sola) y
+   `API_IA_CLAVE` (la del proveedor de IA).
+5. Tocá **Save Changes**. Render redeploya solo; si no, usá
+   **Manual Deploy → Deploy latest commit**.
+6. Abrí la URL del servicio y entrá en `/login` con ese correo y esa clave.
+
+> Las claves de entorno se guardan cifradas y no se muestran de nuevo en el
+> panel. Nunca las escribas en el repositorio ni en `.env.example`.
+
+### 6.2 Después del primer ingreso
+
+- Cambiá la contraseña desde **Cambiar contraseña**.
+- Creá las demás cuentas desde **Usuarios**.
+- Si el servicio usa un disco efímero (plan free), la base se reinicia en cada
+  despliegue: el administrador vuelve a crearse con la clave del entorno y las
+  demás cuentas se pierden. Para conservarlas, montá un disco persistente y
+  apuntá `RAA_DB_PATH` a un archivo dentro de ese disco (por ejemplo
+  `/var/data/raa.db`).
+- Cuando la base sea persistente, podés borrar `RAA_ADMIN_CLAVE` del panel: la
+  cuenta ya existe y la aplicación no la vuelve a crear.
 
 ## 7. Estructura
 
