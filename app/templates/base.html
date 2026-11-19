@@ -89,6 +89,11 @@
             border: 1px solid var(--color-acento);
         }
 
+        /* No mostrar el recuadro cuando no hay texto (evita una caja vacía) */
+        .fecha-demo:empty {
+            display: none;
+        }
+
         /* Logo y título en el encabezado */
         .logo-titulo {
             display: flex;
@@ -263,11 +268,11 @@
             background-color: #f1f3f5;
         }
 
-        /* Tablero con contadores grandes */
+        /* Tablero con contadores compactos */
         .tablero {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: var(--espacio);
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 0.75rem;
             margin-bottom: var(--espacio);
         }
 
@@ -275,15 +280,16 @@
             background-color: var(--color-fondo-secundario);
             border: 1px solid var(--color-borde);
             border-radius: var(--radio);
-            padding: 1.5rem;
+            padding: 0.75rem 1rem;
             text-align: center;
         }
 
         .contador .valor {
-            font-size: 2.5rem;
+            font-size: 1.75rem;
             font-weight: 700;
             color: var(--color-acento);
             display: block;
+            line-height: 1.2;
         }
 
         .contador .etiqueta {
@@ -467,9 +473,7 @@
                     <p>{% block subtitulo %}{% endblock %}</p>
                 </div>
             </div>
-            <span class="fecha-demo">
-                {% block fecha_demo %}{% endblock %}
-            </span>
+            <span class="fecha-demo">{% block fecha_demo %}{% endblock %}</span>
         </header>
 
         {% block navegacion %}{% endblock %}

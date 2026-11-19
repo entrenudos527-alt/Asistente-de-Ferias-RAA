@@ -21,6 +21,77 @@ from app.utils.formato import (
 load_dotenv()
 
 
+def _dias_del_evento(fecha_inicio, fecha_fin):
+    """
+    Devuelve la lista de días (ISO) que abarca el evento.
+
+    Se usa para que el filtro de fecha encuentre también eventos de varios
+    días cuando la fecha consultada está entre el inicio y la finalización.
+    """
+    from datetime import date, datetime, timedelta
+
+    def _a_fecha(valor):
+        if isinstance(valor, datetime):
+            return valor.date()
+        if isinstance(valor, date):
+            return valor
+        from app.utils.formato import _parse_valor
+
+        parseado = _parse_valor(valor)
+        if isinstance(parseado, datetime):
+            return parseado.date()
+        if isinstance(parseado, date):
+            return parseado
+        return None
+
+    inicio = _a_fecha(fecha_inicio)
+    if inicio is None:
+        return []
+
+    fin = _a_fecha(fecha_fin) or inicio
+    if fin < inicio:
+        fin = inicio
+
+    dias = []
+    actual = inicio
+    while actual <= fin and len(dias) < 120:
+        dias.append(actual.isoformat())
+        actual += timedelta(days=1)
+    return dias
+
+
+def _normalizar_eventos(eventos):
+    """Prepara los registros del Excel para las plantillas del listado."""
+    eventos_vista = []
+    for ev in eventos:
+        fecha_inicio = ev.get("Fecha de inicio")
+        fecha_fin = ev.get("Fecha de finalización")
+        eventos_vista.append(
+            {
+                "nombre": str(ev.get("Nombre del evento", "")),
+                "tipo": str(ev.get("Tipo de evento", "")),
+                "lugar": str(ev.get("Lugar del evento", "")),
+                "fecha_inicio": fecha_inicio,
+                "fecha_fin": fecha_fin,
+                "hora_inicio": ev.get("Hora de inicio del evento"),
+                "hora_fin": ev.get("Hora finalización del evento"),
+                "rango_fechas": formatear_rango_fechas(fecha_inicio, fecha_fin),
+                "fechas_iso": _dias_del_evento(fecha_inicio, fecha_fin),
+            }
+        )
+    return eventos_vista
+
+
+def _conteo_por_tipo(eventos):
+    """Cuenta los eventos registrados por tipo."""
+    por_tipo = {}
+    for ev in eventos:
+        tipo = str(ev.get("Tipo de evento", "")).strip()
+        if tipo:
+            por_tipo[tipo] = por_tipo.get(tipo, 0) + 1
+    return por_tipo
+
+
 def create_app():
     """Crea y configura la aplicación Flask."""
     app = Flask(__name__)
@@ -69,26 +140,10 @@ def create_app():
 
         # Contadores
         total = len(eventos)
-        por_tipo = {}
-        for ev in eventos:
-            tipo = str(ev.get("Tipo de evento", "")).strip()
-            if tipo:
-                por_tipo[tipo] = por_tipo.get(tipo, 0) + 1
+        por_tipo = _conteo_por_tipo(eventos)
 
         # Normalizar eventos para la plantilla
-        eventos_vista = []
-        for ev in eventos:
-            eventos_vista.append(
-                {
-                    "nombre": str(ev.get("Nombre del evento", "")),
-                    "tipo": str(ev.get("Tipo de evento", "")),
-                    "lugar": str(ev.get("Lugar del evento", "")),
-                    "fecha_inicio": ev.get("Fecha de inicio"),
-                    "fecha_fin": ev.get("Fecha de finalización"),
-                    "hora_inicio": ev.get("Hora de inicio del evento"),
-                    "hora_fin": ev.get("Hora finalización del evento"),
-                }
-            )
+        eventos_vista = _normalizar_eventos(eventos)
 
         return render_template(
             "inicio.html",
@@ -194,6 +249,13 @@ def create_app():
         datos = leer_eventos()
         eventos = datos["registros"]
 
-        return render_template("inicio.html", eventos=eventos, admin=True)
+        return render_template(
+            "inicio.html",
+            eventos=_normalizar_eventos(eventos),
+            total_registros=len(eventos),
+            tipos_evento=datos["tipos_evento"],
+            conteo_por_tipo=_conteo_por_tipo(eventos),
+            admin=True,
+        )
 
     return app
